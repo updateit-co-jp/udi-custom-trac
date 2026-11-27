@@ -5,8 +5,10 @@ name: build
 on:
   push:
     branches: ['**']
+    branches-ignore: ['gh-pages']
   pull_request:
     branches: ['**']
+    branches-ignore: ['gh-pages']
 
 concurrency:
   group: ${{ github.workflow }}--${{ github.ref }}
