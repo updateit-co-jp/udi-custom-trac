@@ -106,7 +106,7 @@ python3.14 -m venv /path/to/new-venv
 /path/to/new-venv/bin/python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
 }}}
 
-Install the optional dependencies and the database bindings that the environment uses, for example `babel`, `rest`, `pygments`, `textile`, `mysql` or `psycopg2-binary`, as described in the [TracInstall#Usinguv installation guide]. Reinstall any third-party plugins in the new virtual environment as well. Keep the old virtual environment until the new one has been verified.
+Install the optional dependencies and the database bindings that the environment uses, for example `babel`, `rest`, `pygments`, `textile`, `mysql` or `psycopg2-binary`, as described in the [TracInstall#Usinguv installation guide]. Reinstall any third-party plugins in the new virtual environment as well. If the htpasswd file used by the Basic authentication contains SHA-256, SHA-512, bcrypt or DES crypt passwords, also install `passlib` in the new virtual environment, because the `crypt` module is not available in Python 3.13 or later. Keep the old virtual environment until the new one has been verified.
 
 ===== 3. Run the upgrade with the new virtual environment
 
