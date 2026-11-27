@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>アップグレード手順 | udi-custom-trac</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="site-name" href="index.html">udi-custom-trac</a>
+      <nav class="site-nav">
+        <a href="index.html">概要・ダウンロード</a>
+        <a href="install.html">インストール</a>
+        <a href="upgrade.html">アップグレード</a>
+        <a href="https://github.com/updateit-co-jp/udi-custom-trac">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    
+<article class="doc">
+  <h1>アップグレード手順</h1>
+  <p class="source-note">この内容は リポジトリの <code>UPGRADE.rst</code> から生成しています。</p>
+  <section id="instructions-1">
+<span id="instructions"></span><h2>Instructions</h2>
+<p>There are seven recommended steps for upgrading to a newer version of
+Trac:</p>
+<section id="check-your-plugins">
+<span id="a1-checkyourplugins"></span><h3>1. Check your plugins</h3>
+<p>Check whether your plugins are compatible with the version of Trac that
+you are upgrading to. Obsolete plugins listed in the <a class="reference external" href="#versionspecificsteps">version specific
+steps</a> below should be uninstalled or
+disabled.</p>
+<p>If you are upgrading to a minor release, plugin compatibility is usually
+not a concern because the Trac API is normally unchanged.</p>
+<p>If your plugins are installed from
+<a class="reference external" href="https://trac-hacks.org">trac-hacks.org</a> you can check compatibility
+by looking for a tag on the project page corresponding to a major
+release (e.g. <span class="docutils literal">1.4</span>). If you are unsure, you'll want to contact the
+plugin author or ask on the
+<a class="reference external" href="https://trac.edgewall.org/intertrac/MailingList">MailingList</a>.</p>
+<p>If you are running several Trac plugins it is good to test the upgrade
+and plugin functionality in a staging instance of your site before
+upgrading your production instance. Remember, plugin authors are
+responsible for Trac version compatibility and plugins can interact in
+unexpected ways. Your Trac instance may have a unique combination of
+plugins and therefore it's advised that you do some verification testing
+when making any changes to your site.</p>
+</section>
+<section id="bring-your-server-off-line">
+<span id="a2-bringyourserveroff-line"></span><h3>2. Bring your server off-line</h3>
+<p>It is not a good idea to update a running server: the server processes
+may have parts of the current packages cached in memory, and updating
+the code will likely trigger <a class="reference external" href="#zipimporterror">internal errors</a>.</p>
+<p>Although a database backup will be implicitly created by default when
+upgrading the environment, it is always a good idea to perform a full
+backup of the environment using the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracBackup">hotcopy</a> command before
+beginning. You may also wish to create a full backup of your server.</p>
+</section>
+<section id="update-trac-and-dependencies">
+<span id="updatethetraccode"></span><h3>3. Update Trac and dependencies</h3>
+<p>Obtain the wheel for the target version from <a class="reference external" href="https://github.com/updateit-co-jp/udi-custom-trac/releases">GitHub
+Releases</a>
+or from a local build. In the virtual environment that runs Trac,
+install the local wheel using its actual filename:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl</pre>
+</div>
+</div>
+<p>If the environment was created with uv, use <span class="docutils literal">uv pip install</span> instead:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">uv pip install --python /path/to/venv/bin/python --upgrade /path/to/trac-1.8.0-py3-none-any.whl</pre>
+</div>
+</div>
+<p>Ensure that the installed dependencies satisfy the requirements of the
+target version before proceeding with the environment upgrade.</p>
+</section>
+<section id="upgrade-the-trac-environment">
+<span id="upgradethetracenvironment"></span><h3>4. Upgrade the Trac Environment</h3>
+<p>Environment upgrades are not necessary for minor version releases unless
+otherwise noted.</p>
+<p>On starting your web server after upgrading Trac, a message will be
+displayed for projects that need to be upgraded and the projects will
+not be accessible until the upgrade is run.</p>
+<p>The upgrade is run using a
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracAdmin">trac-admin</a> command:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">$ trac-admin /path/to/projenv upgrade</pre>
+</div>
+</div>
+<p>This command will not have any effect if the environment is already
+up-to-date.</p>
+<p>It is recommended that you set the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracIni#logging-log_level-option">log_level</a>
+to <span class="docutils literal">INFO</span> before running the upgrade. The additional information in
+the logs can be helpful in case something unexpected occurs during the
+upgrade.</p>
+<p>Note that a backup of your database will be performed automatically
+prior to the upgrade. The backup is saved in the location specified by
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracIni#trac-backup_dir-option">backup_dir</a>.</p>
+</section>
+<section id="update-the-trac-documentation">
+<span id="updatethetracdocumentation"></span><h3>5. Update the Trac Documentation</h3>
+<p>By default, every <a class="reference external" href="https://trac.edgewall.org/wiki/TracEnvironment">Trac
+environment</a> includes
+a copy of the Trac documentation for the installed version. To keep the
+documentation in sync with the installed version of Trac, upgrade the
+documentation:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">$ trac-admin /path/to/projenv wiki upgrade</pre>
+</div>
+</div>
+<p>Note that this procedure will leave your <span class="docutils literal">WikiStart</span>, <span class="docutils literal">InterMapTxt</span>
+and <span class="docutils literal">SandBox</span> pages unaltered. Local changes to other pages that are
+distributed with Trac will be overwritten, however these pages are
+read-only by default for Environments created in Trac 1.3.3 and later.</p>
+</section>
+<section id="refresh-static-resources">
+<span id="a6-refreshstaticresources"></span><h3>6. Refresh static resources</h3>
+<p>If you have configured your web server to serve static resources
+directly (accessed using the <span class="docutils literal">/chrome/</span> URL) then you will need to
+refresh them using the <a class="reference external" href="https://trac.edgewall.org/wiki/TracInstall#MappingStaticResources">deploy
+command</a>.
+The <span class="docutils literal">deploy</span> command will extract static resources and CGI scripts
+(<span class="docutils literal">trac.wsgi</span>, etc) from the new Trac version and plugins into
+<span class="docutils literal">/deploy/path</span>.</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">$ trac-admin /path/to/env deploy /deploy/path</pre>
+</div>
+</div>
+<p>Before refreshing, it is recommended that you remove the directory in
+which your static resources are deployed. The directory location depends
+on the choice you made during installation. This cleanup is not
+mandatory, but makes it easier to troubleshoot issues as your
+installation is uncluttered by unused assets from a previous release. As
+usual, make a backup before deleting the directory.</p>
+<div class="wikipage docutils container">
+<p><strong>Note:</strong> Some web browsers (IE, Opera) cache CSS and JavaScript
+files, so you should instruct your users to manually erase the
+contents of their browser's cache. A forced refreshed (SHIFT + &lt;F5&gt;)
+should be sufficient.</p>
+</div>
+</section>
+<section id="steps-specific-to-a-given-trac-version">
+<span id="versionspecificsteps"></span><h3>7. Steps specific to a given Trac version</h3>
+<section id="upgrading-to-trac-1-8-from-python-3-12-or-earlier">
+<span id="to1-8"></span><h4>Upgrading to Trac 1.8 from Python 3.12 or earlier</h4>
+<p>Trac 1.8 requires Python 3.13 or later (3.14 or later recommended). If
+the server runs an older Python, the virtual environment must be
+replaced. The existing Trac environment itself does not need to be
+recreated.</p>
+<section id="back-up-the-trac-environment">
+<span id="a1-backupthetracenvironment"></span><h5>1. Back up the Trac environment</h5>
+<p>Stop the web server, then back up the environment directory and the
+database before continuing.</p>
+</section>
+<section id="create-a-new-virtual-environment-with-python-3-13-or-later">
+<span id="a2-createanewvirtualenvironmentwithpython3-13orlater"></span><h5>2. Create a new virtual environment with Python 3.13 or later</h5>
+<p>With uv:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">uv venv --python 3.14 /path/to/new-venv
+uv pip install --python /path/to/new-venv/bin/python /path/to/trac-1.8.0-py3-none-any.whl</pre>
+</div>
+</div>
+<p>With pip, use a Python 3.13 or later interpreter:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">python3.14 -m venv /path/to/new-venv
+/path/to/new-venv/bin/python -m pip install /path/to/trac-1.8.0-py3-none-any.whl</pre>
+</div>
+</div>
+<p>Install the optional dependencies and the database bindings that the
+environment uses, for example <span class="docutils literal">babel</span>, <span class="docutils literal">rest</span>, <span class="docutils literal">pygments</span>,
+<span class="docutils literal">textile</span>, <span class="docutils literal">mysql</span> or <span class="docutils literal"><span class="pre">psycopg2-binary</span></span>, as described in the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracInstall#Usinguv">installation
+guide</a>. Reinstall
+any third-party plugins in the new virtual environment as well. If the
+htpasswd file used by the Basic authentication contains SHA-256,
+SHA-512, bcrypt or DES crypt passwords, also install <span class="docutils literal">passlib</span> in the
+new virtual environment, because the <span class="docutils literal">crypt</span> module is not available
+in Python 3.13 or later. Keep the old virtual environment until the new
+one has been verified.</p>
+</section>
+<section id="run-the-upgrade-with-the-new-virtual-environment">
+<span id="a3-runtheupgradewiththenewvirtualenvironment"></span><h5>3. Run the upgrade with the new virtual environment</h5>
+<p>Run <span class="docutils literal"><span class="pre">trac-admin</span></span> from the new virtual environment against the existing
+environment:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">/path/to/new-venv/bin/trac-admin /path/to/projenv upgrade</pre>
+</div>
+</div>
+</section>
+<section id="switch-the-web-server-to-the-new-virtual-environment">
+<span id="a4-switchthewebservertothenewvirtualenvironment"></span><h5>4. Switch the web server to the new virtual environment</h5>
+<p>Point the web server or <span class="docutils literal">tracd</span> at the new environment's Python and
+<span class="docutils literal">trac.wsgi</span> script. For example, change the
+<span class="docutils literal">WSGIDaemonProcess <span class="pre">python-home</span></span> option or the <span class="docutils literal">tracd</span> command to use
+<span class="docutils literal"><span class="pre">/path/to/new-venv/bin</span></span>. If static resources are served directly, run
+the deploy command described in step 6 with the new <span class="docutils literal"><span class="pre">trac-admin</span></span> as
+well.</p>
+</section>
+<section id="verify">
+<span id="a5-verify"></span><h5>5. Verify</h5>
+<p>Start the server, open the Trac site, and check the log for errors. If
+there is a problem, stop the server, switch back to the old virtual
+environment, and restore the backup if the environment was changed.</p>
+</section>
+</section>
+<section id="upgrading-from-trac-1-4-to-1-5">
+<span id="to1-5"></span><h4>Upgrading from Trac 1.4 to 1.5</h4>
+<section id="python-2-7-no-longer-supported">
+<span id="python2-7nolongersupported"></span><h5>Python 2.7 no longer supported</h5>
+<p>Upgrade Python to 3.5 or later.</p>
+</section>
+</section>
+<section id="upgrading-from-trac-1-2-to-1-4">
+<span id="to1-4"></span><h4>Upgrading from Trac 1.2 to 1.4</h4>
+<section id="python-2-6-no-longer-supported">
+<span id="python2-6nolongersupported"></span><h5>Python 2.6 no longer supported</h5>
+<p>Upgrade Python to 2.7, but not 3.0 or greater.</p>
+</section>
+<section id="mysql-python-no-longer-supported">
+<span id="mysql-pythonnolongersupported"></span><h5>MySQL-python no longer supported</h5>
+<p><a class="reference external" href="https://pypi.python.org/pypi/PyMySQL">PyMySQL</a> is the supported
+MySQL database library, support for
+<a class="reference external" href="https://pypi.python.org/pypi/MySQL-python">MySQL-python</a> has been
+removed.</p>
+</section>
+<section id="obsolete-plugins">
+<span id="obsoleteplugins"></span><h5>Obsolete Plugins</h5>
+<p>Trac has added functionality equivalent to the following plugins:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/DynamicVariablesPlugin">DynamicVariablesPlugin</a>:
+dynamic variables are autocompleted</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/NavAddPlugin">NavAddPlugin</a>: see
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracNavigation">TracNavigation</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/FlexibleAssignToPlugin">FlexibleAssignToPlugin</a>:
+subclass <span class="docutils literal">ConfigurableTicketWorkflow</span> and override
+<span class="docutils literal">get_allowed_owners</span></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/TracMigratePlugin">TracMigratePlugin</a>:
+Use the <span class="docutils literal"><span class="pre">trac-admin</span></span> <a class="reference external" href="https://trac.edgewall.org/wiki/TracAdmin#ChangingDatabaseBackend">convert_db
+command</a></p></li>
+</ul>
+<p>The plugins should be removed when upgrading Trac to 1.4.</p>
+</section>
+<section id="jinja2-is-the-new-template-engine">
+<span id="jinja2isthenewtemplateengine"></span><h5>Jinja2 is the new template engine</h5>
+<p>Content is now generated by using the Jinja2 template engine. You should
+verify that your plugins are compatible with this change.</p>
+<p>If you customized the Trac templates, or the <span class="docutils literal">site.html</span> template,
+you'll need to adapt that as well. (TODO: expand...) See
+<a class="reference external" href="#customizedtemplates">#CustomizedTemplates</a>. Email <a class="reference external" href="https://trac.edgewall.org/wiki/TracNotification#CustomizingContent">notification
+templates</a>
+also need to be adapted.</p>
+</section>
+<section id="new-permission-policies-for-wiki-and-ticket-realms">
+<span id="newpermissionpoliciesforwikiandticketrealms"></span><h5>New permission policies for Wiki and Ticket realms</h5>
+<p>Since 1.3.2 there are new permission policies for the ticket and wiki
+systems. <span class="docutils literal">DefaultTicketPolicy</span> allows an authenticated user with
+<span class="docutils literal">TICKET_APPEND</span> or <span class="docutils literal">TICKET_CHPROP</span> to modify the description of a
+ticket they reported. It also implements the pre-1.3.2 behavior of
+allowing users to edit their own ticket comments.
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracUpgrade#Newpermissionspolicyforread-onlywikipages">ReadonlyWikiPolicy</a>,
+added in 1.1.2, is renamed to <span class="docutils literal">DefaultWikiPolicy</span>. The new permission
+policies can be easily replaced with alternate implementations if the
+default behavior is not desired.</p>
+<p>If <span class="docutils literal">[trac] permission_policy</span> has the default value
+<span class="docutils literal">ReadonlyWikiPolicy, DefaultPermissionPolicy, LegacyAttachmentPolicy</span>,
+then <span class="docutils literal">DefaultWikiPolicy, DefaultTicketPolicy</span> should be automatically
+appended to the list when upgrading the environment:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">[trac]
+permission_policies = DefaultWikiPolicy,
+ DefaultTicketPolicy,
+ DefaultPermissionPolicy,
+ LegacyAttachmentPolicy</pre>
+</div>
+</div>
+<p>If other permission policies are enabled, <span class="docutils literal">trac.ini</span> will need to be
+edited to add <span class="docutils literal">DefaultWikiPolicy, DefaultTicketPolicy</span> to
+<span class="docutils literal">permission_policies</span>. See
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracFineGrainedPermissions#DefaultWikiPolicyandDefaultTicketPolicy">TracFineGrainedPermissions</a>
+for additional details on the proper ordering.</p>
+</section>
+<section id="description-field-added-to-ticket-enums">
+<span id="enum-description-field"></span><h5>Description field added to ticket enums</h5>
+<p>The ticket enums now have a <em>description</em> field. An <em>ambiguous column
+name</em> error may be seen for reports that reference the <span class="docutils literal">description</span>
+column of another table and join the <span class="docutils literal">enum</span> table with that table
+(e.g. <span class="docutils literal">ticket</span>, <span class="docutils literal">component</span>). The reports {1}, {2}, {3}, {4}, {5},
+{7}, and {8} are modified by an upgrade step to fix the issue, but the
+modification may not succeed if the default reports have been modified,
+in which case <span class="docutils literal">upgrade</span> will output a message to the terminal
+instructing the user to modify the reports. User-created reports may
+also need to be modified.</p>
+<p>Reports that display the error need to be modified to prefix the
+<span class="docutils literal">description</span> column with the appropriate table name or alias. For
+example, if the <span class="docutils literal">ticket</span> table is aliased as <span class="docutils literal">t</span> (<span class="docutils literal">ticket t</span> or
+<span class="docutils literal">ticket AS t</span>), replace <span class="docutils literal">description</span> with <span class="docutils literal">t.description</span> if the
+report should use the ticket's <span class="docutils literal">description</span> column.</p>
+</section>
+<section id="removed-repostype-and-repospath-arguments-from-trac-admin-initenv-command">
+<span id="removedrepostypeandrepospathargumentsfromtrac-admininitenvcommand"></span><h5>Removed <span class="docutils literal">&lt;repostype&gt;</span> and <span class="docutils literal">&lt;repospath&gt;</span> arguments from <span class="docutils literal"><span class="pre">trac-admin</span></span> <span class="docutils literal">initenv</span> command</h5>
+<p>The <a class="reference external" href="https://trac.edgewall.org/wiki/TracAdmin">TracAdmin</a> <span class="docutils literal">initenv</span>
+command allowed the default repository to be specified using the third
+and fourth positional arguments of <span class="docutils literal">initenv</span>:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">initenv [&lt;projectname&gt; &lt;db&gt; [&lt;repostype&gt; &lt;repospath&gt;]]</pre>
+</div>
+</div>
+<p>The arguments were an artifact of Trac &lt; 0.12, which only supported a
+single repository. Trac 0.12 and later supports multiple repositories,
+which can be specified at the time of environment creation using the
+<span class="docutils literal"><span class="pre">--inherit</span></span> and <span class="docutils literal"><span class="pre">--config</span></span> arguments. See the <a class="reference external" href="https://trac.edgewall.org/wiki/TracEnvironment#SourceCodeRepository">initenv
+documentation</a>
+for details on specifying source code repositories.</p>
+</section>
+</section>
+<section id="upgrading-from-trac-1-0-to-1-2">
+<span id="to1-2"></span><h4>Upgrading from Trac 1.0 to 1.2</h4>
+<section id="python-2-5-no-longer-supported">
+<span id="python2-5nolongersupported"></span><h5>Python 2.5 no longer supported</h5>
+<p>Upgrade Python to at least 2.6 or 2.7, but not 3.0 or greater.</p>
+</section>
+<section id="obsolete-plugins-1">
+<span id="obsoleteplugins1"></span><h5>Obsolete Plugins</h5>
+<p>Trac has added functionality equivalent to the following plugins:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/AdminEnumListPlugin">AdminEnumListPlugin</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/AttachmentNotifyPlugin">AttachmentNotifyPlugin</a>:
+attachment notifications are sent in Trac 1.0.3 and later</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/DateFieldPlugin">DateFieldPlugin</a>: see
+the <strong>time</strong> <a class="reference external" href="https://trac.edgewall.org/wiki/TracTicketsCustomFields#AvailableFieldTypesandOptions">custom field
+type</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/FlexibleReporterNotificationPlugin">FlexibleReporterNotificationPlugin</a>:
+<a class="reference external" href="https://trac.edgewall.org/intertrac/CookBook/Notification/Subscriptions">custom
+subscribers</a>
+can be implemented in the new extensible notification system</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/GroupBasedRedirectionPlugin">GroupBasedRedirectionPlugin</a>:
+the default handler can set as a user preference</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/GroupingAssignToPlugin">GroupingAssignToPlugin</a>:
+groups and permissions can be used in the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracWorkflow#BasicTicketWorkflowCustomization">set_owner</a>
+workflow attribute</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/LinenoMacro">LinenoMacro</a>: see
+<a class="reference external" href="https://trac.edgewall.org/wiki/WikiProcessors#AvailableProcessors">WikiProcessors#AvailableProcessors</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/NeverNotifyUpdaterPlugin">NeverNotifyUpdaterPlugin</a>:
+see <a class="reference external" href="https://trac.edgewall.org/wiki/TracNotification#notification-subscriber-section">notification
+subscribers</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/QueryUiAssistPlugin">QueryUiAssistPlugin</a>:
+see
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracQuery#Filters">TracQuery#Filters</a>.</p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/TicketCreationStatusPlugin">TicketCreationStatusPlugin</a>:
+see <a class="reference external" href="#newworkflowactions">#NewWorkflowActions</a></p></li>
+</ul>
+<p>The plugins should be removed when upgrading Trac to 1.2.</p>
+</section>
+<section id="new-workflow-actions">
+<span id="newworkflowactions"></span><h5>New workflow actions</h5>
+<p>The ticket creation step is controlled with a workflow action. The
+default workflow has <span class="docutils literal">create</span> and <span class="docutils literal">create_and_assign</span> actions. The
+<span class="docutils literal">create</span> action will always be added when upgrading the database. The
+<span class="docutils literal">create_and_assign</span> action will be added if the workflow has an
+<em>assigned</em> state. You may want to edit your workflow after upgrading the
+database to customize the actions available on the <em>New Ticket</em> page.</p>
+</section>
+<section id="new-permissions-policy-for-read-only-wiki-pages">
+<span id="newpermissionspolicyforread-onlywikipages"></span><h5>New permissions policy for read-only wiki pages</h5>
+<p>Since 1.1.2 the read-only attribute of wiki pages is enabled and
+enforced only when <span class="docutils literal">ReadonlyWikiPolicy</span> is in the list of active
+permission policies. If <span class="docutils literal">[trac] permission_policy</span> has the default
+value <span class="docutils literal">DefaultPermissionPolicy, LegacyAttachmentPolicy</span>, then
+<span class="docutils literal">ReadonlyWikiPolicy</span> should be automatically appended to the list when
+upgrading the environment:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">[trac]
+permission_policies = ReadonlyWikiPolicy,
+ DefaultPermissionPolicy,
+ LegacyAttachmentPolicy</pre>
+</div>
+</div>
+<p>If other permission policies are enabled, <span class="docutils literal">trac.ini</span> will need to have
+<span class="docutils literal">ReadonlyWikiPolicy</span> appended to the list of active
+<span class="docutils literal">permission_policies</span>. See
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracFineGrainedPermissions#ReadonlyWikiPolicy">TracFineGrainedPermissions#ReadonlyWikiPolicy</a>
+for additional details on the proper ordering.</p>
+</section>
+<section id="navigation-ordering-moved">
+<span id="navigationorderingmoved"></span><h5>Navigation Ordering Moved</h5>
+<p>The mainnav and metanav configuration ordering have been moved from
+<span class="docutils literal">[trac]</span> <span class="docutils literal">mainnav</span> and <span class="docutils literal">[trac]</span> <span class="docutils literal">metanav</span> to the <span class="docutils literal">[mainnav]</span>
+and <span class="docutils literal">[metanav]</span> sections. The ordering is now specified using the
+<span class="docutils literal">order</span> attribute as described in
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracNavigation#nav-order">TracNavigation</a>.</p>
+<p>The new configuration values will be written to trac.ini on upgrade,
+preserving the navigation order for the environment. You may need to
+edit trac.ini if you use a shared <a class="reference external" href="https://trac.edgewall.org/wiki/TracIni#GlobalConfiguration">global
+configuration</a>.
+For example, if you wish to specify the navigation ordering for several
+environments in <span class="docutils literal">global.ini</span>, you'll need to add the <span class="docutils literal">[mainnav]</span> and
+<span class="docutils literal">[metanav]</span> sections in that file and delete those sections from each
+environment's trac.ini.</p>
+</section>
+</section>
+<section id="upgrading-from-trac-0-12-to-trac-1-0">
+<span id="to1-0"></span><h4>Upgrading from Trac 0.12 to Trac 1.0</h4>
+<section id="python-2-4-no-longer-supported">
+<span id="python2-4nolongersupported"></span><h5>Python 2.4 no longer supported</h5>
+<p>Upgrade Python to at least 2.5, but not 3.0.</p>
+</section>
+<section id="obsolete-plugins-2">
+<span id="obsoleteplugins2"></span><h5>Obsolete Plugins</h5>
+<p>Trac has added functionality equivalent to the following plugins:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/AnchorMacro">AnchorMacro</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/BatchModifyPlugin">BatchModifyPlugin</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/GitPlugin">GitPlugin</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/OverrideEditPlugin">OverrideEditPlugin</a></p></li>
+<li><p><a class="reference external" href="https://trac-hacks.org/wiki/ProgressMeterMacro">ProgressMeterMacro</a></p></li>
+</ul>
+<p>The plugins should be removed when upgrading Trac to 1.0.</p>
+</section>
+<section id="subversion-components-not-enabled-by-default-for-new-installations">
+<span id="subversioncomponentsnotenabledbydefaultfornewinstallations"></span><h5>Subversion components not enabled by default for new installations</h5>
+<p>The Trac components for Subversion support are no longer enabled by
+default. To enable the svn support, you need to make sure the
+<span class="docutils literal">tracopt.versioncontrol.svn</span> components are enabled, for example by
+setting the following in the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracIni">TracIni</a>:</p>
+<div class="wiki-code docutils container">
+<div class="code docutils container">
+<pre class="literal-block">[components]
+tracopt.versioncontrol.svn.* = enabled</pre>
+</div>
+</div>
+<p>The upgrade procedure should take care of this and change the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracIni">TracIni</a> appropriately,
+unless you already had the svn components explicitly disabled.</p>
+</section>
+<section id="attachments-migrated-to-new-location">
+<span id="attachmentsmigrated"></span><h5>Attachments migrated to new location</h5>
+<p>Another step in the automatic upgrade will change the way the
+attachments are stored. There have been reports that the attachment
+migration <a class="reference external" href="#attachmentsnotmigrated">sometimes fails</a>, so it's extra
+important that you <a class="reference external" href="https://trac.edgewall.org/wiki/TracBackup">backup your
+environment</a>.</p>
+<p>In case the <span class="docutils literal">attachments</span> directory contains some files which are
+<em>not</em> attachments, the last step of the migration to the new layout will
+not be completed: the deletion of the now unused <span class="docutils literal">attachments</span>
+directory can't be done if there are still files and folders in it. You
+may ignore this error, but better to move them elsewhere and remove the
+<span class="docutils literal">attachments</span> directory manually. The attachments themselves are now
+all located in your environment below the <span class="docutils literal">files/attachments</span>
+directory.</p>
+</section>
+<section id="behavior-of-ticket-default-owner-changed">
+<span id="behaviorofticketdefault-ownerchanged"></span><h5>Behavior of <span class="docutils literal">[ticket] default_owner</span> changed</h5>
+<p>Prior to 1.0, the owner field of new tickets always defaulted to
+<span class="docutils literal">[ticket] default_owner</span> when the value was not empty. If the value
+was empty, the owner field defaulted to to the Component's owner. In 1.0
+and later, the <span class="docutils literal">default_owner</span> must be set to <span class="docutils literal">&lt; default &gt;</span> to make
+new tickets default to the Component's owner. This change allows the
+<span class="docutils literal">default_owner</span> to be set to an empty value if no default owner is
+desired.</p>
+</section>
+<section id="behavior-of-workflow-transition">
+<span id="behaviorof-workflowtransition"></span><h5>Behavior of <span class="docutils literal">* <span class="pre">-&gt;</span> *</span> workflow transition</h5>
+<p>The workflow transition <span class="docutils literal">* <span class="pre">-&gt;</span> *</span> must have the operation
+<span class="docutils literal">leave_status</span>. Due to a defect in Trac &lt; 1.0.18 <span class="docutils literal">leave_status</span> was
+not required, so it may be necessary to add the operation when
+upgrading. The action will not display for a <span class="docutils literal">* <span class="pre">-&gt;</span> *</span> transition if
+the action does not have the <span class="docutils literal">leave_status</span> operation.</p>
+</section>
+</section>
+<section id="upgrading-from-older-versions-of-trac">
+<span id="olderversions"></span><h4>Upgrading from older versions of Trac</h4>
+<p>For upgrades from versions older than Trac 0.12, refer first to
+<a class="reference external" href="https://trac.edgewall.org/intertrac/wiki%3A0.12/TracUpgrade%23SpecificVersions">TracUpgrade for
+0.12</a>.</p>
+<p>For upgrades from versions older than Trac 0.10, refer first to
+<a class="reference external" href="https://trac.edgewall.org/intertrac/wiki%3A0.10/TracUpgrade%23SpecificVersions">TracUpgrade for
+0.10</a>.</p>
+</section>
+</section>
+</section>
+<section id="known-issues">
+<span id="knownissues"></span><h2>Known Issues</h2>
+<section id="customized-templates">
+<span id="customizedtemplates"></span><h3>Customized Templates</h3>
+<p>Trac supports customization of its templates by placing copies of the
+templates in the <span class="docutils literal"><span class="pre">&lt;env&gt;/templates</span></span> folder of your
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracEnvironment">environment</a> or in a
+common location specified in the
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracIni#GlobalConfiguration">inherit.templates_dir</a>
+configuration setting. If you choose to customize the templates, be
+aware that you will need to repeat your changes on a copy of the new
+templates when you upgrade to a new release of Trac (even a minor one),
+as the templates will evolve. So keep a diff around.</p>
+<p>The preferred way to perform
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracInterfaceCustomization">TracInterfaceCustomization</a>
+is a custom plugin doing client-side JavaScript transformation of the
+generated output, as this is more robust in case of changes: we usually
+won't modify an element <span class="docutils literal">id</span> or change its CSS <span class="docutils literal">class</span>, and if we
+have to do so, this will be documented in the
+<a class="reference external" href="https://trac.edgewall.org/intertrac/TracDev/ApiChanges">TracDev/ApiChanges</a>
+pages.</p>
+</section>
+<section id="zipimporterror-1">
+<span id="zipimporterror"></span><h3>ZipImportError</h3>
+<p>Due to internal caching of zipped packages, whenever the content of the
+packages change on disk, the in-memory zip index will no longer match
+and you'll get irrecoverable ZipImportError errors. Better to anticipate
+and bring your server down for maintenance before upgrading. See
+<a class="reference external" href="https://trac.edgewall.org/intertrac/%237014">#7014</a> for details.</p>
+</section>
+<section id="wiki-upgrade">
+<span id="wikiupgrade"></span><h3>Wiki Upgrade</h3>
+<p><span class="docutils literal"><span class="pre">trac-admin</span></span> will not delete or remove default wiki pages that were
+present in a previous version but are no longer in the new version.</p>
+</section>
+<section id="parent-dir">
+<span id="parentdir"></span><h3>Parent dir</h3>
+<p>If you use a Trac parent env configuration and one of the plugins in one
+child does not work, none of the children will work.</p>
+</section>
+<section id="attachments-not-migrated">
+<span id="attachmentsnotmigrated"></span><h3>Attachments not migrated</h3>
+<p>There have been reports that attachments are not
+<a class="reference external" href="#attachmentsmigrated">migrated</a> when upgrading to Trac 1.0 or later.
+The cause of the issue has not yet been found. If you encounter this
+issue, see <a class="reference external" href="https://trac.edgewall.org/wiki/TracFaq#Q:Attachmentsaremissingafterupgrade">the
+FAQ</a>
+for a workaround and please report your findings to
+<a class="reference external" href="https://trac.edgewall.org/intertrac/%2311370">#11370</a>.</p>
+</section>
+</section>
+<section id="related-topics">
+<span id="relatedtopics"></span><h2>Related topics</h2>
+<section id="upgrading-python">
+<span id="upgradingpython"></span><h3>Upgrading Python</h3>
+<p>Upgrading Python to a newer version will require reinstallation of
+Python packages: Trac itself of course, but also
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracInstall#Dependencies">dependencies</a>.
+If you are using Subversion, you'll need to upgrade the <a class="reference external" href="https://trac.edgewall.org/intertrac/TracSubversion">Python bindings
+for SVN</a>.</p>
+<hr class="docutils" />
+<p>See also: <a class="reference external" href="https://trac.edgewall.org/wiki/TracGuide">TracGuide</a>,
+<a class="reference external" href="https://trac.edgewall.org/wiki/TracInstall">TracInstall</a></p>
+</section>
+</section>
+
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Copyright (C) 2003-2026 Edgewall Software.</p>
+      <p>Copyright (c) 2006-2026 update it, Inc.</p>
+      <p>All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
