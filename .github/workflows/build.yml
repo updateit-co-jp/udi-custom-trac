@@ -4,11 +4,15 @@ name: build
 
 on:
   push:
-    branches: ['**']
     branches-ignore: ['gh-pages']
+    paths-ignore:
+      - 'ghpages_frontend/**'
+      - '.github/workflows/pages.yml'
   pull_request:
-    branches: ['**']
     branches-ignore: ['gh-pages']
+    paths-ignore:
+      - 'ghpages_frontend/**'
+      - '.github/workflows/pages.yml'
 
 concurrency:
   group: ${{ github.workflow }}--${{ github.ref }}
