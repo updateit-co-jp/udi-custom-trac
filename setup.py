@@ -12,12 +12,13 @@
 # individuals. For the exact contribution history, see the revision
 # history and logs, available at https://trac.edgewall.org/log/.
 
+import os
 import sys
 
 from setuptools import setup
 
 
-min_python = (3, 5)
+min_python = (3, 13)
 if sys.version_info < min_python:
     print("Trac requires Python %d.%d or later" % min_python)
     sys.exit(1)
@@ -29,6 +30,9 @@ try:
 except ImportError:
     pass
 else:
+    # Isolated PEP 517 build environments (e.g. `uv build`) do not put the
+    # project directory on sys.path, so `trac` must be made importable here.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from trac.dist import get_l10n_trac_cmdclass
     extra['cmdclass'] = get_l10n_trac_cmdclass()
 

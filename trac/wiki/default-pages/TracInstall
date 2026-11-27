@@ -16,7 +16,7 @@ These are generic instructions for installing and setting up Trac. While you may
 
 To install Trac, the following software packages must be installed:
 
- * [https://www.python.org/ Python], version >= 3.5
+ * [https://www.python.org/ Python], version >= 3.13 (3.14 or later recommended)
  * [https://pypi.org/project/setuptools setuptools], version > 5.6
  * [https://pypi.org/project/Jinja2 Jinja2], version >= 2.9.3
 
@@ -131,6 +131,30 @@ python -m pip install "/path/to/trac-1.8.0-py3-none-any.whl[babel,rest,pygments,
 }}}
 
 `rest` installs `docutils`. Add `mysql` or `psycopg2-binary` if you use MySQL or PostgreSQL, respectively.
+
+=== Installing with uv #Usinguv
+
+[https://docs.astral.sh/uv/ uv] can create the virtual environment and install the wheel. Use Python 3.14 or later (3.13 is the minimum):
+
+{{{#!sh
+uv venv --python 3.14 /path/to/venv
+uv pip install --python /path/to/venv/bin/python /path/to/trac-1.8.0-py3-none-any.whl
+}}}
+
+To add extras, name the package with the extras and give the wheel as its source. Appending `[extras]` to the wheel path, as with pip, does not work with uv:
+
+{{{#!sh
+uv pip install --python /path/to/venv/bin/python "trac[babel,rest,pygments,textile] @ file:///path/to/trac-1.8.0-py3-none-any.whl"
+}}}
+
+To build the wheel from a checkout with uv, first install the dependencies and compile the translations, then install Trac itself. Installing Trac before the translations are compiled fails, as it does with pip. After that, `make` builds the wheel with translations included:
+
+{{{#!sh
+uv sync --no-install-project
+make PYTHON="uv run --no-sync python" compile
+uv sync
+make PYTHON="uv run python" wheel
+}}}
 
 Third-party plugins can also be installed from PyPI. See TracPlugins for details.
 

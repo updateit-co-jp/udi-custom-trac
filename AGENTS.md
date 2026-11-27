@@ -19,7 +19,9 @@
 
 ## ビルド・テスト・ローカル開発
 
-- 仮想環境を有効にし、`python -m pip install -e .` で編集可能インストールを行う。
+- uv を使う場合（推奨）: 初回は `uv sync --no-install-project` → `make PYTHON="uv run --no-sync python" compile` → `uv sync` の順で行う。翻訳をコンパイルする前に Trac 本体を入れようとすると失敗するため（`pip install -e .` も同じ）。対応は Python 3.13 以上（推奨 3.14 以上）。`.python-version` で 3.14 を指定している。以降は `uv run trac-admin ...` / `uv run tracd ...` / `uv run python -m unittest ...` で実行する。
+- uv で単体テストを実行する場合は `make PYTHON="uv run python" unit-test`。翻訳込み wheel は `make PYTHON="uv run python" wheel` で生成する（`make compile` を経由するため）。`uv build --wheel` も翻訳込み wheel を作れるが、`uv build`（sdist 経由）は sdist に翻訳ソース `.po` が含まれないため失敗する。uv 経路の総合確認は `contrib/uv-smoke.sh <python-version>` で行える。
+- 仮想環境を有効にし、`python -m pip install -e .` で編集可能インストールを行う（pip を使う場合）。
 - `trac-admin /path/to/test-env initenv` で開発用環境を作成し、`make server env=/path/to/test-env port=8000` でローカルサーバーを起動する。
 - 単体テストは `make unit-test`、ブラウザテストは `make functional-test`、両方は `make test`。個別実行の例は `make test=trac/ticket/tests/model.py`。
 - ローカルでビルドするには仮想環境で `python -m pip install -r requirements-build.txt` を実行し、`make wheel` で翻訳込みの wheel を `dist/` に生成する。

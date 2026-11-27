@@ -30,6 +30,12 @@ Obtain the wheel for the target version from [https://github.com/updateit-co-jp/
 python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl
 }}}
 
+If the environment was created with uv, use `uv pip install` instead:
+
+{{{#!sh
+uv pip install --python /path/to/venv/bin/python --upgrade /path/to/trac-1.8.0-py3-none-any.whl
+}}}
+
 Ensure that the installed dependencies satisfy the requirements of the target version before proceeding with the environment upgrade.
 
 === 4. Upgrade the Trac Environment #UpgradetheTracEnvironment
@@ -75,6 +81,48 @@ Remove above note once #9936 is fixed.
 }}}
 
 === 7. Steps specific to a given Trac version #VersionSpecificSteps
+
+==== Upgrading to Trac 1.8 from Python 3.12 or earlier #to1.8
+
+Trac 1.8 requires Python 3.13 or later (3.14 or later recommended). If the server runs an older Python, the virtual environment must be replaced. The existing Trac environment itself does not need to be recreated.
+
+===== 1. Back up the Trac environment
+
+Stop the web server, then back up the environment directory and the database before continuing.
+
+===== 2. Create a new virtual environment with Python 3.13 or later
+
+With uv:
+
+{{{#!sh
+uv venv --python 3.14 /path/to/new-venv
+uv pip install --python /path/to/new-venv/bin/python /path/to/trac-1.8.0-py3-none-any.whl
+}}}
+
+With pip, use a Python 3.13 or later interpreter:
+
+{{{#!sh
+python3.14 -m venv /path/to/new-venv
+/path/to/new-venv/bin/python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
+}}}
+
+Install the optional dependencies and the database bindings that the environment uses, for example `babel`, `rest`, `pygments`, `textile`, `mysql` or `psycopg2-binary`, as described in the [TracInstall#Usinguv installation guide]. Reinstall any third-party plugins in the new virtual environment as well. Keep the old virtual environment until the new one has been verified.
+
+===== 3. Run the upgrade with the new virtual environment
+
+Run `trac-admin` from the new virtual environment against the existing environment:
+
+{{{#!sh
+/path/to/new-venv/bin/trac-admin /path/to/projenv upgrade
+}}}
+
+===== 4. Switch the web server to the new virtual environment
+
+Point the web server or `tracd` at the new environment's Python and `trac.wsgi` script. For example, change the `WSGIDaemonProcess python-home` option or the `tracd` command to use `/path/to/new-venv/bin`. If static resources are served directly, run the deploy command described in step 6 with the new `trac-admin` as well.
+
+===== 5. Verify
+
+Start the server, open the Trac site, and check the log for errors. If there is a problem, stop the server, switch back to the old virtual environment, and restore the backup if the environment was changed.
 
 ==== Upgrading from Trac 1.4 to 1.5 #to1.5
 

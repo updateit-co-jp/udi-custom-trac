@@ -25,3 +25,6 @@ trac/htdocs/js/messages/*.js
 .settings
 .DS_Store
 Thumbs.db
+
+# uv
+.venv

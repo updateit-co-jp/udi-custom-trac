@@ -59,14 +59,28 @@ beginning. You may also wish to create a full backup of your server.
 3. Update Trac and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Obtain the wheel for the target version from
-`GitHub Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
+Obtain the wheel for the target version from `GitHub
+Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
 or from a local build. In the virtual environment that runs Trac,
 install the local wheel using its actual filename:
 
-::
+.. container:: wiki-code
 
-   python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl
+   .. container:: code
+
+      ::
+
+         python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl
+
+If the environment was created with uv, use ``uv pip install`` instead:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         uv pip install --python /path/to/venv/bin/python --upgrade /path/to/trac-1.8.0-py3-none-any.whl
 
 Ensure that the installed dependencies satisfy the requirements of the
 target version before proceeding with the environment upgrade.
@@ -171,6 +185,96 @@ usual, make a backup before deleting the directory.
 7. Steps specific to a given Trac version
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _to1.8:
+
+Upgrading to Trac 1.8 from Python 3.12 or earlier
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Trac 1.8 requires Python 3.13 or later (3.14 or later recommended). If
+the server runs an older Python, the virtual environment must be
+replaced. The existing Trac environment itself does not need to be
+recreated.
+
+.. _a1.backupthetracenvironment:
+
+1. Back up the Trac environment
+'''''''''''''''''''''''''''''''
+
+Stop the web server, then back up the environment directory and the
+database before continuing.
+
+.. _a2.createanewvirtualenvironmentwithpython3.13orlater:
+
+2. Create a new virtual environment with Python 3.13 or later
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+With uv:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         uv venv --python 3.14 /path/to/new-venv
+         uv pip install --python /path/to/new-venv/bin/python /path/to/trac-1.8.0-py3-none-any.whl
+
+With pip, use a Python 3.13 or later interpreter:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         python3.14 -m venv /path/to/new-venv
+         /path/to/new-venv/bin/python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
+
+Install the optional dependencies and the database bindings that the
+environment uses, for example ``babel``, ``rest``, ``pygments``,
+``textile``, ``mysql`` or ``psycopg2-binary``, as described in the
+`installation
+guide <https://trac.edgewall.org/wiki/TracInstall#Usinguv>`__. Reinstall
+any third-party plugins in the new virtual environment as well. Keep the
+old virtual environment until the new one has been verified.
+
+.. _a3.runtheupgradewiththenewvirtualenvironment:
+
+3. Run the upgrade with the new virtual environment
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Run ``trac-admin`` from the new virtual environment against the existing
+environment:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         /path/to/new-venv/bin/trac-admin /path/to/projenv upgrade
+
+.. _a4.switchthewebservertothenewvirtualenvironment:
+
+4. Switch the web server to the new virtual environment
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Point the web server or ``tracd`` at the new environment's Python and
+``trac.wsgi`` script. For example, change the
+``WSGIDaemonProcess python-home`` option or the ``tracd`` command to use
+``/path/to/new-venv/bin``. If static resources are served directly, run
+the deploy command described in step 6 with the new ``trac-admin`` as
+well.
+
+.. _a5.verify:
+
+5. Verify
+'''''''''
+
+Start the server, open the Trac site, and check the log for errors. If
+there is a problem, stop the server, switch back to the old virtual
+environment, and restore the backup if the environment was changed.
+
 .. _to1.5:
 
 Upgrading from Trac 1.4 to 1.5
@@ -212,16 +316,16 @@ Obsolete Plugins
 
 Trac has added functionality equivalent to the following plugins:
 
--  `DynamicVariablesPlugin <https://trac-hacks.org/wiki/DynamicVariablesPlugin>`__:
-   dynamic variables are autocompleted
--  `NavAddPlugin <https://trac-hacks.org/wiki/NavAddPlugin>`__: see
-   `TracNavigation <https://trac.edgewall.org/wiki/TracNavigation>`__
--  `FlexibleAssignToPlugin <https://trac-hacks.org/wiki/FlexibleAssignToPlugin>`__:
-   subclass ``ConfigurableTicketWorkflow`` and override
-   ``get_allowed_owners``
--  `TracMigratePlugin <https://trac-hacks.org/wiki/TracMigratePlugin>`__:
-   Use the ``trac-admin`` `convert_db
-   command <https://trac.edgewall.org/wiki/TracAdmin#ChangingDatabaseBackend>`__
+- `DynamicVariablesPlugin <https://trac-hacks.org/wiki/DynamicVariablesPlugin>`__:
+  dynamic variables are autocompleted
+- `NavAddPlugin <https://trac-hacks.org/wiki/NavAddPlugin>`__: see
+  `TracNavigation <https://trac.edgewall.org/wiki/TracNavigation>`__
+- `FlexibleAssignToPlugin <https://trac-hacks.org/wiki/FlexibleAssignToPlugin>`__:
+  subclass ``ConfigurableTicketWorkflow`` and override
+  ``get_allowed_owners``
+- `TracMigratePlugin <https://trac-hacks.org/wiki/TracMigratePlugin>`__:
+  Use the ``trac-admin`` `convert_db
+  command <https://trac.edgewall.org/wiki/TracAdmin#ChangingDatabaseBackend>`__
 
 The plugins should be removed when upgrading Trac to 1.4.
 
@@ -341,32 +445,32 @@ Obsolete Plugins
 
 Trac has added functionality equivalent to the following plugins:
 
--  `AdminEnumListPlugin <https://trac-hacks.org/wiki/AdminEnumListPlugin>`__
--  `AttachmentNotifyPlugin <https://trac-hacks.org/wiki/AttachmentNotifyPlugin>`__:
-   attachment notifications are sent in Trac 1.0.3 and later
--  `DateFieldPlugin <https://trac-hacks.org/wiki/DateFieldPlugin>`__:
-   see the **time** `custom field
-   type <https://trac.edgewall.org/wiki/TracTicketsCustomFields#AvailableFieldTypesandOptions>`__
--  `FlexibleReporterNotificationPlugin <https://trac-hacks.org/wiki/FlexibleReporterNotificationPlugin>`__:
-   `custom
-   subscribers <https://trac.edgewall.org/intertrac/CookBook/Notification/Subscriptions>`__
-   can be implemented in the new extensible notification system
--  `GroupBasedRedirectionPlugin <https://trac-hacks.org/wiki/GroupBasedRedirectionPlugin>`__:
-   the default handler can set as a user preference
--  `GroupingAssignToPlugin <https://trac-hacks.org/wiki/GroupingAssignToPlugin>`__:
-   groups and permissions can be used in the
-   `set_owner <https://trac.edgewall.org/wiki/TracWorkflow#BasicTicketWorkflowCustomization>`__
-   workflow attribute
--  `LinenoMacro <https://trac-hacks.org/wiki/LinenoMacro>`__: see
-   `WikiProcessors#AvailableProcessors <https://trac.edgewall.org/wiki/WikiProcessors#AvailableProcessors>`__
--  `NeverNotifyUpdaterPlugin <https://trac-hacks.org/wiki/NeverNotifyUpdaterPlugin>`__:
-   see `notification
-   subscribers <https://trac.edgewall.org/wiki/TracNotification#notification-subscriber-section>`__
--  `QueryUiAssistPlugin <https://trac-hacks.org/wiki/QueryUiAssistPlugin>`__:
-   see
-   `TracQuery#Filters <https://trac.edgewall.org/wiki/TracQuery#Filters>`__.
--  `TicketCreationStatusPlugin <https://trac-hacks.org/wiki/TicketCreationStatusPlugin>`__:
-   see `#NewWorkflowActions <#newworkflowactions>`__
+- `AdminEnumListPlugin <https://trac-hacks.org/wiki/AdminEnumListPlugin>`__
+- `AttachmentNotifyPlugin <https://trac-hacks.org/wiki/AttachmentNotifyPlugin>`__:
+  attachment notifications are sent in Trac 1.0.3 and later
+- `DateFieldPlugin <https://trac-hacks.org/wiki/DateFieldPlugin>`__: see
+  the **time** `custom field
+  type <https://trac.edgewall.org/wiki/TracTicketsCustomFields#AvailableFieldTypesandOptions>`__
+- `FlexibleReporterNotificationPlugin <https://trac-hacks.org/wiki/FlexibleReporterNotificationPlugin>`__:
+  `custom
+  subscribers <https://trac.edgewall.org/intertrac/CookBook/Notification/Subscriptions>`__
+  can be implemented in the new extensible notification system
+- `GroupBasedRedirectionPlugin <https://trac-hacks.org/wiki/GroupBasedRedirectionPlugin>`__:
+  the default handler can set as a user preference
+- `GroupingAssignToPlugin <https://trac-hacks.org/wiki/GroupingAssignToPlugin>`__:
+  groups and permissions can be used in the
+  `set_owner <https://trac.edgewall.org/wiki/TracWorkflow#BasicTicketWorkflowCustomization>`__
+  workflow attribute
+- `LinenoMacro <https://trac-hacks.org/wiki/LinenoMacro>`__: see
+  `WikiProcessors#AvailableProcessors <https://trac.edgewall.org/wiki/WikiProcessors#AvailableProcessors>`__
+- `NeverNotifyUpdaterPlugin <https://trac-hacks.org/wiki/NeverNotifyUpdaterPlugin>`__:
+  see `notification
+  subscribers <https://trac.edgewall.org/wiki/TracNotification#notification-subscriber-section>`__
+- `QueryUiAssistPlugin <https://trac-hacks.org/wiki/QueryUiAssistPlugin>`__:
+  see
+  `TracQuery#Filters <https://trac.edgewall.org/wiki/TracQuery#Filters>`__.
+- `TicketCreationStatusPlugin <https://trac-hacks.org/wiki/TicketCreationStatusPlugin>`__:
+  see `#NewWorkflowActions <#newworkflowactions>`__
 
 The plugins should be removed when upgrading Trac to 1.2.
 
@@ -450,11 +554,11 @@ Obsolete Plugins
 
 Trac has added functionality equivalent to the following plugins:
 
--  `AnchorMacro <https://trac-hacks.org/wiki/AnchorMacro>`__
--  `BatchModifyPlugin <https://trac-hacks.org/wiki/BatchModifyPlugin>`__
--  `GitPlugin <https://trac-hacks.org/wiki/GitPlugin>`__
--  `OverrideEditPlugin <https://trac-hacks.org/wiki/OverrideEditPlugin>`__
--  `ProgressMeterMacro <https://trac-hacks.org/wiki/ProgressMeterMacro>`__
+- `AnchorMacro <https://trac-hacks.org/wiki/AnchorMacro>`__
+- `BatchModifyPlugin <https://trac-hacks.org/wiki/BatchModifyPlugin>`__
+- `GitPlugin <https://trac-hacks.org/wiki/GitPlugin>`__
+- `OverrideEditPlugin <https://trac-hacks.org/wiki/OverrideEditPlugin>`__
+- `ProgressMeterMacro <https://trac-hacks.org/wiki/ProgressMeterMacro>`__
 
 The plugins should be removed when upgrading Trac to 1.0.
 

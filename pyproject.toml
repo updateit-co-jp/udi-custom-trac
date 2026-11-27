@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=75.3.1,<81", "wheel", "Jinja2", "Babel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Trac"
+requires-python = ">=3.13"
+dynamic = [
+    "version",
+    "description",
+    "readme",
+    "license",
+    "authors",
+    "classifiers",
+    "urls",
+    "dependencies",
+    "optional-dependencies",
+    "scripts",
+    "entry-points",
+]
+
+[dependency-groups]
+dev = [
+    "Babel",
+    "Pygments",
+    "docutils",
+    "textile",
+    "pytz",
+    "PyMySQL",
+    "cryptography",
+    "passlib",
+    "bcrypt<4.1.0",
+    "multipart",
+    "aiosmtpd",
+]
+functional = [
+    "selenium!=4.10.0",
+    "pytidylib",
+]
+
+[tool.uv]
+default-groups = ["dev"]

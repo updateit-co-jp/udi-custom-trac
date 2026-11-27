@@ -40,9 +40,10 @@ Mandatory Dependencies
 
 To install Trac, the following software packages must be installed:
 
--  `Python <https://www.python.org/>`__, version >= 3.5
--  `setuptools <https://pypi.org/project/setuptools>`__, version > 5.6
--  `Jinja2 <https://pypi.org/project/Jinja2>`__, version >= 2.9.3
+- `Python <https://www.python.org/>`__, version >= 3.13 (3.14 or later
+  recommended)
+- `setuptools <https://pypi.org/project/setuptools>`__, version > 5.6
+- `Jinja2 <https://pypi.org/project/Jinja2>`__, version >= 2.9.3
 
 You also need a database system and the corresponding Python bindings.
 The database can be either SQLite, PostgreSQL or MySQL.
@@ -68,9 +69,8 @@ For the PostgreSQL database
 
 You need to install the database and its Python bindings:
 
--  `PostgreSQL <https://www.postgresql.org/>`__, version 9.1 or later
--  `psycopg2 <https://pypi.org/project/psycopg2>`__, version 2.5 or
-   later
+- `PostgreSQL <https://www.postgresql.org/>`__, version 9.1 or later
+- `psycopg2 <https://pypi.org/project/psycopg2>`__, version 2.5 or later
 
 See
 `DatabaseBackend <https://trac.edgewall.org/intertrac/DatabaseBackend%23Postgresql>`__
@@ -83,8 +83,8 @@ For the MySQL database
 
 Trac works well with MySQL, provided you use the following:
 
--  `MySQL <https://mysql.com/>`__, version 5.0 or later
--  `PyMySQL <https://pypi.org/project/PyMySQL>`__
+- `MySQL <https://mysql.com/>`__, version 5.0 or later
+- `PyMySQL <https://pypi.org/project/PyMySQL>`__
 
 Given the caveats and known issues surrounding MySQL, read carefully the
 `MySqlDb <https://trac.edgewall.org/intertrac/MySqlDb>`__ page before
@@ -113,11 +113,11 @@ for more information.
 
    **Note:**
 
-   -  Trac **doesn't** use `PySVN <https://pypi.org/project/PySVN>`__,
-      nor does it work yet with the newer ``ctype``-style bindings.
-   -  If using Subversion, Trac must be installed on the **same
-      machine**. Remote repositories are `not
-      supported <https://trac.edgewall.org/intertrac/ticket%3A493>`__.
+   - Trac **doesn't** use `PySVN <https://pypi.org/project/PySVN>`__,
+     nor does it work yet with the newer ``ctype``-style bindings.
+   - If using Subversion, Trac must be installed on the **same
+     machine**. Remote repositories are `not
+     supported <https://trac.edgewall.org/intertrac/ticket%3A493>`__.
 
 For troubleshooting information, see the
 `TracSubversion <https://trac.edgewall.org/intertrac/TracSubversion%23Troubleshooting>`__
@@ -155,54 +155,53 @@ section below.
 Alternatively you can configure Trac to run in any of the following
 environments:
 
--  `Apache <https://httpd.apache.org/>`__ with
+- `Apache <https://httpd.apache.org/>`__ with
 
-   -  `mod_wsgi <https://github.com/GrahamDumpleton/mod_wsgi>`__, see
-      `TracModWSGI <https://trac.edgewall.org/wiki/TracModWSGI>`__ and
-      `ModWSGI
-      IntegrationWithTrac <https://code.google.com/p/modwsgi/wiki/IntegrationWithTrac>`__.
-   -  `mod_python 3.5.0 <http://modpython.org/>`__, see
-      `TracModPython <https://trac.edgewall.org/wiki/TracModPython>`__
+  - `mod_wsgi <https://github.com/GrahamDumpleton/mod_wsgi>`__, see
+    `TracModWSGI <https://trac.edgewall.org/wiki/TracModWSGI>`__ and
+    `ModWSGI
+    IntegrationWithTrac <https://code.google.com/p/modwsgi/wiki/IntegrationWithTrac>`__.
+  - `mod_python 3.5.0 <http://modpython.org/>`__, see
+    `TracModPython <https://trac.edgewall.org/wiki/TracModPython>`__
 
--  a `FastCGI <https://fastcgi-archives.github.io>`__-capable web server
-   (see `TracFastCgi <https://trac.edgewall.org/wiki/TracFastCgi>`__)
--  an
-   `AJP <https://tomcat.apache.org/connectors-doc/ajp/ajpv13a.html>`__-capable
-   web server (see
-   `TracOnWindowsIisAjp <https://trac.edgewall.org/intertrac/TracOnWindowsIisAjp>`__)
--  Microsoft IIS with FastCGI and a FastCGI-to-WSGI gateway (see `IIS
-   with
-   FastCGI <https://trac.edgewall.org/intertrac/CookBook/Installation/TracOnWindowsIisWfastcgi>`__)
--  a CGI-capable web server (see
-   `TracCgi <https://trac.edgewall.org/wiki/TracCgi>`__), **but usage of
-   Trac as a cgi script is highly discouraged**, better use one of the
-   previous options.
+- a `FastCGI <https://fastcgi-archives.github.io>`__-capable web server
+  (see `TracFastCgi <https://trac.edgewall.org/wiki/TracFastCgi>`__)
+- an
+  `AJP <https://tomcat.apache.org/connectors-doc/ajp/ajpv13a.html>`__-capable
+  web server (see
+  `TracOnWindowsIisAjp <https://trac.edgewall.org/intertrac/TracOnWindowsIisAjp>`__)
+- Microsoft IIS with FastCGI and a FastCGI-to-WSGI gateway (see `IIS
+  with
+  FastCGI <https://trac.edgewall.org/intertrac/CookBook/Installation/TracOnWindowsIisWfastcgi>`__)
+- a CGI-capable web server (see
+  `TracCgi <https://trac.edgewall.org/wiki/TracCgi>`__), **but usage of
+  Trac as a cgi script is highly discouraged**, better use one of the
+  previous options.
 
 .. _otherpythonpackages:
 
 Other Python Packages
 ^^^^^^^^^^^^^^^^^^^^^
 
--  `Babel <http://babel.pocoo.org>`__, version >= 2.2, needed for
-   localization support
--  `pytz <http://pytz.sourceforge.net>`__ to get a complete list of time
-   zones, otherwise Trac will fall back on a shorter list from an
-   internal time zone implementation. Installing Babel will install
-   pytz.
--  `docutils <http://docutils.sourceforge.net>`__, version >= 0.14, for
-   `WikiRestructuredText <https://trac.edgewall.org/wiki/WikiRestructuredText>`__.
--  `Pygments <http://pygments.org>`__, version >= 1.0, for `syntax
-   highlighting <https://trac.edgewall.org/wiki/TracSyntaxColoring>`__.
--  `Textile <https://pypi.org/project/textile>`__, version >= 2.3, for
-   rendering the `Textile markup
-   language <https://github.com/textile/python-textile>`__.
--  `passlib <https://pypi.org/project/passlib>`__ on Windows to decode
-   `htpasswd
-   formats <https://trac.edgewall.org/wiki/TracStandalone#BasicAuthorization:Usingahtpasswdpasswordfile>`__
-   other than ``SHA-1``.
--  `pyreadline <https://pypi.org/project/pyreadline>`__ on Windows for
-   trac-admin `command
-   completion <https://trac.edgewall.org/wiki/TracAdmin#InteractiveMode>`__.
+- `Babel <http://babel.pocoo.org>`__, version >= 2.2, needed for
+  localization support
+- `pytz <http://pytz.sourceforge.net>`__ to get a complete list of time
+  zones, otherwise Trac will fall back on a shorter list from an
+  internal time zone implementation. Installing Babel will install pytz.
+- `docutils <http://docutils.sourceforge.net>`__, version >= 0.14, for
+  `WikiRestructuredText <https://trac.edgewall.org/wiki/WikiRestructuredText>`__.
+- `Pygments <http://pygments.org>`__, version >= 1.0, for `syntax
+  highlighting <https://trac.edgewall.org/wiki/TracSyntaxColoring>`__.
+- `Textile <https://pypi.org/project/textile>`__, version >= 2.3, for
+  rendering the `Textile markup
+  language <https://github.com/textile/python-textile>`__.
+- `passlib <https://pypi.org/project/passlib>`__ on Windows to decode
+  `htpasswd
+  formats <https://trac.edgewall.org/wiki/TracStandalone#BasicAuthorization:Usingahtpasswdpasswordfile>`__
+  other than ``SHA-1``.
+- `pyreadline <https://pypi.org/project/pyreadline>`__ on Windows for
+  trac-admin `command
+  completion <https://trac.edgewall.org/wiki/TracAdmin#InteractiveMode>`__.
 
 .. container:: wikipage
 
@@ -236,42 +235,105 @@ standalone server are installed with this fork's wheel.
 Installing a local wheel
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Download the wheel from
-`GitHub Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
+Download the wheel from `GitHub
+Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
 or build one from a checkout. To build locally, activate a virtual
 environment and run the following commands in the checkout:
 
-::
+.. container:: wiki-code
 
-   python -m pip install -r requirements-build.txt
-   make wheel
+   .. container:: code
+
+      ::
+
+         python -m pip install -r requirements-build.txt
+         make wheel
 
 The build compiles translations and writes the wheel to ``dist/``. Copy
 the wheel to the deployment host, then install it in the target virtual
 environment. Use the filename of your wheel in the following command:
 
-::
+.. container:: wiki-code
 
-   python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
+   .. container:: code
+
+      ::
+
+         python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
 
 By default, pip resolves the runtime dependencies declared in the wheel.
 The optional dependencies can be installed from PyPI using pip:
 
-::
+.. container:: wiki-code
 
-   python -m pip install babel docutils pygments textile
+   .. container:: code
+
+      ::
+
+         python -m pip install babel docutils pygments textile
 
 To install extras together with the wheel, append them to its path:
 
-::
+.. container:: wiki-code
 
-   python -m pip install "/path/to/trac-1.8.0-py3-none-any.whl[babel,rest,pygments,textile]"
+   .. container:: code
 
-``rest`` installs ``docutils``. Add ``mysql`` or ``psycopg2-binary``
-if you use MySQL or PostgreSQL, respectively.
+      ::
+
+         python -m pip install "/path/to/trac-1.8.0-py3-none-any.whl[babel,rest,pygments,textile]"
+
+``rest`` installs ``docutils``. Add ``mysql`` or ``psycopg2-binary`` if
+you use MySQL or PostgreSQL, respectively.
+
+.. _usinguv:
+
+Installing with uv
+~~~~~~~~~~~~~~~~~~
+
+`uv <https://docs.astral.sh/uv/>`__ can create the virtual environment
+and install the wheel. Use Python 3.14 or later (3.13 is the minimum):
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         uv venv --python 3.14 /path/to/venv
+         uv pip install --python /path/to/venv/bin/python /path/to/trac-1.8.0-py3-none-any.whl
+
+To add extras, name the package with the extras and give the wheel as
+its source. Appending ``[extras]`` to the wheel path, as with pip, does
+not work with uv:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         uv pip install --python /path/to/venv/bin/python "trac[babel,rest,pygments,textile] @ file:///path/to/trac-1.8.0-py3-none-any.whl"
+
+To build the wheel from a checkout with uv, first install the
+dependencies and compile the translations, then install Trac itself.
+Installing Trac before the translations are compiled fails, as it does
+with pip. After that, ``make`` builds the wheel with translations
+included:
+
+.. container:: wiki-code
+
+   .. container:: code
+
+      ::
+
+         uv sync --no-install-project
+         make PYTHON="uv run --no-sync python" compile
+         uv sync
+         make PYTHON="uv run python" wheel
 
 Third-party plugins can also be installed from PyPI. See
-`TracPlugins <https://trac.edgewall.org/wiki/TracPlugins>`__ for details.
+`TracPlugins <https://trac.edgewall.org/wiki/TracPlugins>`__ for
+details.
 
 .. _creatingaprojectenvironment:
 
@@ -383,12 +445,12 @@ Running Trac on a Web Server
 
 Trac provides various options for connecting to a "real" web server:
 
--  `FastCGI <https://trac.edgewall.org/wiki/TracFastCgi>`__
--  `Apache with mod_wsgi <https://trac.edgewall.org/wiki/TracModWSGI>`__
--  `Apache with
-   mod_python <https://trac.edgewall.org/wiki/TracModPython>`__
--  `CGI <https://trac.edgewall.org/wiki/TracCgi>`__ *(should not be
-   used, as the performance is far from optimal)*
+- `FastCGI <https://trac.edgewall.org/wiki/TracFastCgi>`__
+- `Apache with mod_wsgi <https://trac.edgewall.org/wiki/TracModWSGI>`__
+- `Apache with
+  mod_python <https://trac.edgewall.org/wiki/TracModPython>`__
+- `CGI <https://trac.edgewall.org/wiki/TracCgi>`__ *(should not be used,
+  as the performance is far from optimal)*
 
 Trac also supports
 `AJP <https://trac.edgewall.org/intertrac/TracOnWindowsIisAjp>`__ which
@@ -464,13 +526,13 @@ wish to upload plugins through the *Plugins* administration page.
 
 The ``deploy`` command creates an ``htdocs`` directory with:
 
--  ``common/`` - the static resources of Trac
--  ``site/`` - a copy of the environment's ``htdocs/`` directory
--  ``shared`` - the static resources shared by multiple Trac
-   environments, with a location defined by the ``[inherit]``
-   ``htdocs_dir`` option
--  ``<plugin>/`` - one directory for each resource directory provided by
-   the plugins enabled for this environment
+- ``common/`` - the static resources of Trac
+- ``site/`` - a copy of the environment's ``htdocs/`` directory
+- ``shared`` - the static resources shared by multiple Trac
+  environments, with a location defined by the ``[inherit]``
+  ``htdocs_dir`` option
+- ``<plugin>/`` - one directory for each resource directory provided by
+  the plugins enabled for this environment
 
 The example that follows will create a single ``/chrome`` alias. If that
 isn't the correct approach for your installation you simply need to
@@ -629,14 +691,14 @@ authentication depends on the specific way you run Trac.
 
 Please refer to one of the following sections:
 
--  `TracStandalone#UsingAuthentication <https://trac.edgewall.org/wiki/TracStandalone#UsingAuthentication>`__
-   if you use the standalone server, ``tracd``.
--  `TracModWSGI#ConfiguringAuthentication <https://trac.edgewall.org/wiki/TracModWSGI#ConfiguringAuthentication>`__
-   if you use the Apache web server, with any of its front end:
-   ``mod_wsgi``, ``mod_python``, ``mod_fcgi`` or ``mod_fastcgi``.
--  `TracFastCgi <https://trac.edgewall.org/wiki/TracFastCgi>`__ if
-   you're using another web server with FCGI support (Cherokee,
-   Lighttpd, LiteSpeed, nginx)
+- `TracStandalone#UsingAuthentication <https://trac.edgewall.org/wiki/TracStandalone#UsingAuthentication>`__
+  if you use the standalone server, ``tracd``.
+- `TracModWSGI#ConfiguringAuthentication <https://trac.edgewall.org/wiki/TracModWSGI#ConfiguringAuthentication>`__
+  if you use the Apache web server, with any of its front end:
+  ``mod_wsgi``, ``mod_python``, ``mod_fcgi`` or ``mod_fastcgi``.
+- `TracFastCgi <https://trac.edgewall.org/wiki/TracFastCgi>`__ if you're
+  using another web server with FCGI support (Cherokee, Lighttpd,
+  LiteSpeed, nginx)
 
 `TracAuthenticationIntroduction <https://trac.edgewall.org/intertrac/TracAuthenticationIntroduction>`__
 also contains some useful information for beginners.
@@ -674,16 +736,15 @@ your project.
 In addition to the optional version control backends, Trac provides
 several optional features that are disabled by default:
 
--  `Fine-grained permission
-   policy <https://trac.edgewall.org/wiki/TracFineGrainedPermissions#AuthzPolicy>`__
--  `Custom
-   permissions <https://trac.edgewall.org/wiki/TracPermissions#CreatingNewPrivileges>`__
--  `Ticket
-   deletion <https://trac.edgewall.org/wiki/TracTickets#deleter>`__
--  `Ticket
-   cloning <https://trac.edgewall.org/wiki/TracTickets#cloner>`__
--  `Ticket changeset
-   references <https://trac.edgewall.org/wiki/TracRepositoryAdmin#CommitTicketUpdater>`__
+- `Fine-grained permission
+  policy <https://trac.edgewall.org/wiki/TracFineGrainedPermissions#AuthzPolicy>`__
+- `Custom
+  permissions <https://trac.edgewall.org/wiki/TracPermissions#CreatingNewPrivileges>`__
+- `Ticket
+  deletion <https://trac.edgewall.org/wiki/TracTickets#deleter>`__
+- `Ticket cloning <https://trac.edgewall.org/wiki/TracTickets#cloner>`__
+- `Ticket changeset
+  references <https://trac.edgewall.org/wiki/TracRepositoryAdmin#CommitTicketUpdater>`__
 
 .. _usingtrac:
 
