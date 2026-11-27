@@ -1,36 +1,39 @@
 name: GitHub Pages
 
-# Builds ghpages_frontend/ and publishes dist/ to the gh-pages branch.
-# The build reads INSTALL.rst and UPGRADE.rst, so changes to them trigger it too.
+# Builds ghpages_frontend/ with uv and deploys dist/ with the GitHub Pages
+# Actions deployment (no gh-pages branch push, so GITHUB_TOKEN is not involved).
+# Pages の配信元は「GitHub Actions」に設定しておく必要があります。
 on:
   push:
     branches: [main]
     paths:
       - 'ghpages_frontend/**'
-      - 'INSTALL.rst'
-      - 'UPGRADE.rst'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10.4.0
         with:
-          python-version: '3.12'
+          prune-cache: true
 
-      - name: Install Python dependencies
-        run: python -m pip install -r ghpages_frontend/requirements.txt
+      - name: Prepare Python 3.14 and docutils
+        working-directory: ghpages_frontend
+        run: |
+          uv python install 3.14
+          uv venv --python 3.14 --managed-python .venv
+          uv pip install --python .venv/bin/python -r requirements.txt
 
       - uses: pnpm/action-setup@v4
         with:
@@ -49,13 +52,23 @@ jobs:
       - name: Build site
         working-directory: ghpages_frontend
         env:
-          PYTHON: python
+          PYTHON: .venv/bin/python
         run: pnpm build
 
-      - name: Publish to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ghpages_frontend/dist
-          publish_branch: gh-pages
-          force_orphan: true
+          path: ghpages_frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

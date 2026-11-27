@@ -23,11 +23,11 @@ const srcDir = join(siteRoot, 'src');
 const distDir = join(siteRoot, 'dist');
 const python = process.env.PYTHON || 'python3';
 
-// Pages built from reStructuredText in the repository.
+// Japanese guides built from reStructuredText in src/docs/.
 // `title` is the page heading on the site; the RST title is not used.
 const rstPages = [
-  { source: 'INSTALL.rst', output: 'install.html', title: 'インストール手順' },
-  { source: 'UPGRADE.rst', output: 'upgrade.html', title: 'アップグレード手順' },
+  { source: 'ghpages_frontend/src/docs/install.rst', output: 'install.html', title: 'インストール手順' },
+  { source: 'ghpages_frontend/src/docs/upgrade.rst', output: 'upgrade.html', title: 'アップグレード手順' },
 ];
 
 // Pages written directly as templates.

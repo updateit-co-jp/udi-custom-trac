@@ -13,9 +13,14 @@
   <p><a class="button" href="{{ site.releasesUrl }}">GitHub Releases を開く</a></p>
 
   <h2>クイックインストール</h2>
-  <p>仮想環境を作り、ダウンロードした wheel を指定してインストールします。ファイル名は実際のものに置き換えてください。</p>
-  <pre><code>python -m venv /path/to/venv
-/path/to/venv/bin/python -m pip install /path/to/trac-X.Y.Z-py3-none-any.whl</code></pre>
-  <p>詳しい手順は <a href="install.html">インストール手順</a> を、既存環境の更新は <a href="upgrade.html">アップグレード手順</a> を参照してください。</p>
+  <p>開発・本番運用ともに uv を使います。Trac には Python 3.13 以上が必要です。Ubuntu 24.04 などで標準の Python が 3.12 以下でも、uv が用意した Python 3.14 で動かせます。</p>
+  <p><a href="https://docs.astral.sh/uv/getting-started/installation/">uv を用意し</a>、wheel のパスをダウンロードしたファイルに置き換えてください。Babel は日本語表示に使います。</p>
+  <pre><code>mkdir -p ~/udi-custom-trac
+cd ~/udi-custom-trac
+uv python install 3.14
+uv venv --no-project --python 3.14 --managed-python .venv
+uv pip install --python .venv/bin/python /path/to/trac-X.Y.Z-py3-none-any.whl Babel
+uv run --no-project tracd --version</code></pre>
+  <p>初期設定と本番の常時起動は <a href="install.html">インストール手順</a>、既存環境の更新は <a href="upgrade.html">アップグレード手順</a> を参照してください。</p>
 </article>
 {% endblock %}
