@@ -43,6 +43,18 @@ GitHub側でISSUE（Branch）を切っていてそれについての作業あれ
 
 PUSH先は`github.com:updateit-co-jp/udi-custom-trac.git`であり、フォーク元にプルリクを投げるなどは一切禁止とする。
 
+## Copyright 
+
+フォーク元が`Trac is licensed under the modified BSD license.`となるため、
+
+```
+Copyright (C) 2003-2026 Edgewall Software.
+Copyright (c) 2006-2026 update it, Inc.
+All rights reserved.
+```
+
+という表記の扱いとなり、`Copyright (C) 2003-20XX Edgewall Software.` の部分は改変禁止.
+
 ## 完了報告（必須）
 
 - `Status: COMPLETE / PARTIAL / BLOCKED`

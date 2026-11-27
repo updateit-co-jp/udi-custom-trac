@@ -69,12 +69,14 @@ if ($LASTEXITCODE) {
     exit 1
 }
 $rc = 0
-& make.exe unit-test
-if ($LASTEXITCODE) {
-    Write-Warning "'make.exe unit-test' exited with $LASTEXITCODE"
-    $rc = 1
+if ($env:MATRIX_TESTS -ne 'functional-only') {
+    & make.exe unit-test
+    if ($LASTEXITCODE) {
+        Write-Warning "'make.exe unit-test' exited with $LASTEXITCODE"
+        $rc = 1
+    }
 }
-if ($env:MATRIX_TESTS -eq 'functional') {
+if ($env:MATRIX_TESTS -in 'functional', 'functional-only') {
     & make.exe functional-test testopts=-v
     if ($LASTEXITCODE) {
         Write-Warning "'make.exe functional-test testopts=-v' exited with $LASTEXITCODE"
