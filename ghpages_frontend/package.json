@@ -1,0 +1,17 @@
+{
+  "name": "udi-custom-trac-pages",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GitHub Pages site for the update it fork of Trac (static site generator)",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\""
+  },
+  "dependencies": {
+    "nunjucks": "3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

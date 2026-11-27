@@ -1,0 +1,21 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<article class="doc">
+  <h1>{{ site.name }}</h1>
+  <p>update it の Trac フォーク版です。ここではダウンロード方法とインストール・アップグレードの手順を案内します。</p>
+
+  <h2>ダウンロード</h2>
+  <p>
+    wheel ファイル（<code>.whl</code>）は GitHub Releases から取得してください。
+    日付付き開発版は「Pre-release」として公開されます。
+  </p>
+  <p><a class="button" href="{{ site.releasesUrl }}">GitHub Releases を開く</a></p>
+
+  <h2>クイックインストール</h2>
+  <p>仮想環境を作り、ダウンロードした wheel を指定してインストールします。ファイル名は実際のものに置き換えてください。</p>
+  <pre><code>python -m venv /path/to/venv
+/path/to/venv/bin/python -m pip install /path/to/trac-X.Y.Z-py3-none-any.whl</code></pre>
+  <p>詳しい手順は <a href="install.html">インストール手順</a> を、既存環境の更新は <a href="upgrade.html">アップグレード手順</a> を参照してください。</p>
+</article>
+{% endblock %}

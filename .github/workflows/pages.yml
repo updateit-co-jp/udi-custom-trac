@@ -1,0 +1,61 @@
+name: GitHub Pages
+
+# Builds ghpages_frontend/ and publishes dist/ to the gh-pages branch.
+# The build reads INSTALL.rst and UPGRADE.rst, so changes to them trigger it too.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ghpages_frontend/**'
+      - 'INSTALL.rst'
+      - 'UPGRADE.rst'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: python -m pip install -r ghpages_frontend/requirements.txt
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: ghpages_frontend/pnpm-lock.yaml
+
+      - name: Install Node dependencies
+        working-directory: ghpages_frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build site
+        working-directory: ghpages_frontend
+        env:
+          PYTHON: python
+        run: pnpm build
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ghpages_frontend/dist
+          publish_branch: gh-pages
+          force_orphan: true
