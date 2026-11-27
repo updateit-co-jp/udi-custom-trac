@@ -29,11 +29,37 @@ const python = pythonEnv.includes('/') ? resolve(pythonEnv) : pythonEnv;
 
 // Japanese guides built from reStructuredText in src/docs/.
 // `title` is the page heading on the site; the RST title is not used.
+// `nav` is the short label for the header menu, `summary` the card text on
+// the top page.
 const rstPages = [
-  { source: 'ghpages_frontend/src/docs/install.rst', output: 'install.html', title: 'インストール手順' },
-  { source: 'ghpages_frontend/src/docs/https.rst', output: 'https.html', title: 'HTTPS で公開する' },
-  { source: 'ghpages_frontend/src/docs/migration-1.6.rst', output: 'migration-1.6.html', title: '本家の Trac 1.6.x から引っ越してくる' },
-  { source: 'ghpages_frontend/src/docs/upgrade.rst', output: 'upgrade.html', title: 'アップグレード手順' },
+  {
+    source: 'ghpages_frontend/src/docs/install.rst',
+    output: 'install.html',
+    title: 'インストール手順',
+    nav: 'インストール',
+    summary: 'VM に uv と wheel で新規導入し、systemd で常時起動するまで。',
+  },
+  {
+    source: 'ghpages_frontend/src/docs/https.rst',
+    output: 'https.html',
+    title: 'HTTPS で公開する',
+    nav: 'HTTPS 公開',
+    summary: 'Apache2 を介す構成、tracd 単独の構成のどちらでも HTTPS で公開する。',
+  },
+  {
+    source: 'ghpages_frontend/src/docs/migration-1.6.rst',
+    output: 'migration-1.6.html',
+    title: '本家の Trac 1.6.x から引っ越してくる',
+    nav: '1.6.x からの移行',
+    summary: '本家 Trac 1.6.x のデータを、リハーサルと切り戻し手順つきで移す。',
+  },
+  {
+    source: 'ghpages_frontend/src/docs/upgrade.rst',
+    output: 'upgrade.html',
+    title: 'アップグレード手順',
+    nav: 'アップグレード',
+    summary: 'バックアップを取ったうえで、フォーク版の新しい wheel に更新する。',
+  },
 ];
 
 // Pages written directly as templates.
@@ -43,8 +69,10 @@ const templatePages = [
 
 const site = {
   name: 'udi-custom-trac',
+  description: 'update it の Trac フォーク版。チケット管理・Wiki・Git / Subversion 連携を、uv と wheel で導入できる形で配布します。',
   repoUrl: 'https://github.com/updateit-co-jp/udi-custom-trac',
   releasesUrl: 'https://github.com/updateit-co-jp/udi-custom-trac/releases',
+  guides: rstPages,
 };
 
 function renderRst(sources) {
@@ -78,7 +106,7 @@ function main() {
     const key = join(repoRoot, page.source);
     const html = env.render('page.njk', {
       site,
-      page: { title: page.title, source: page.source },
+      page: { title: page.title, output: page.output, source: page.source },
       body: rendered[key].body,
     });
     writeFileSync(join(distDir, page.output), html, 'utf-8');
@@ -87,7 +115,7 @@ function main() {
   for (const page of templatePages) {
     const html = env.render(page.template, {
       site,
-      page: { title: page.title },
+      page: { title: page.title, output: page.output },
     });
     writeFileSync(join(distDir, page.output), html, 'utf-8');
   }

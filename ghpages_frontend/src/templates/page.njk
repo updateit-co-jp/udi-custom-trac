@@ -1,9 +1,27 @@
 {% extends "base.njk" %}
 
 {% block content %}
-<article class="doc">
-  <h1>{{ page.title }}</h1>
-  <p class="source-note">この内容は リポジトリの <code>{{ page.source }}</code> から生成しています。</p>
-  {{ body | safe }}
-</article>
+<div class="wrap doc-layout">
+  <nav class="doc-nav" aria-label="ガイド一覧">
+    <p class="doc-nav-title">ガイド</p>
+    <ul>
+      {% for guide in site.guides %}
+      <li>
+        <a href="{{ guide.output }}"{% if guide.output == page.output %} aria-current="page"{% endif %}>{{ guide.title }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <article class="doc">
+    <header class="doc-head">
+      <p class="eyebrow">ガイド</p>
+      <h1>{{ page.title }}</h1>
+      <p class="source-note">この内容はリポジトリの <code>{{ page.source }}</code> から生成しています。</p>
+    </header>
+    <div class="doc-body">
+      {{ body | safe }}
+    </div>
+  </article>
+</div>
 {% endblock %}
