@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# Copyright (c) 2006-2026 update it, Inc.
+# All rights reserved.
+#
 # Smoke test for the uv workflow: lock sync, unit tests, SQLite environment,
 # tracd HTTP response, and a translated wheel installed into a fresh uv venv.
 # The checkout is copied into a temporary directory first, so the build and

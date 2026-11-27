@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2003-2026 Edgewall Software
+# Copyright (c) 2006-2026 update it, Inc.
 # All rights reserved.
 #
 # This software is licensed as described in the file COPYING, which

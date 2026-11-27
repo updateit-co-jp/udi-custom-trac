@@ -2,6 +2,7 @@
 #
 # Copyright (C) 2005-2026 Edgewall Software
 # Copyright (C) 2005-2006 Christopher Lenz <cmlenz@gmx.de>
+# Copyright (c) 2006-2026 update it, Inc.
 # All rights reserved.
 #
 # This software is licensed as described in the file COPYING, which
