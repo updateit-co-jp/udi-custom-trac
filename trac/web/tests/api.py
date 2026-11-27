@@ -13,7 +13,6 @@
 
 from datetime import datetime
 import errno
-import gc
 import io
 import os.path
 import tempfile
@@ -1184,9 +1183,9 @@ class FormBodyLimitTestCase(unittest.TestCase):
                                         spy_temp_file):
             with self.assertRaises(HTTPBadRequest):
                 req.arg_list
-        gc.collect()
         self.assertTrue(created)
-        # Every temporary file is closed, or has already been released
+        # Checked right after the request fails, without waiting for garbage
+        # collection: every temporary file is already closed (or released)
         for ref in created:
             file_ = ref()
             self.assertTrue(file_ is None or file_.closed)

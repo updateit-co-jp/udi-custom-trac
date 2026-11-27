@@ -524,6 +524,24 @@ _READ_CHUNK_SIZE = 64 * 1024
 _SPOOL_MAX_SIZE = 64 * 1024
 
 
+def _release_unfinished_parts(tb):
+    """Close the upload the multipart parser was writing when it failed.
+
+    The parser yields a part only once it is complete, so a part that is
+    still being written exists only as a local variable of the parser's
+    frames. Those frames are in the traceback of the parse error. Each
+    such part is closed explicitly, and the frames' locals are then
+    cleared, so the temporary file does not wait for garbage collection.
+    """
+    frame_tb = tb
+    while frame_tb is not None:
+        unfinished = frame_tb.tb_frame.f_locals.get('part')
+        if isinstance(unfinished, multipart.MultipartPart):
+            unfinished.close()
+        frame_tb = frame_tb.tb_next
+    traceback.clear_frames(tb)
+
+
 def _read_form_body(environ, limit):
     """Read the whole body of a form submission into a spooled temporary
     file, before any parsing starts.
@@ -646,10 +664,7 @@ if multipart:
                         form_environ, charset='utf-8', strict=False,
                         ignore_errors=False)
                 except multipart.MultipartError as e:
-                    # The parser's frames hold the upload it was writing when
-                    # it failed. Clear them so that upload's temporary file
-                    # is closed rather than kept alive by the traceback.
-                    traceback.clear_frames(e.__traceback__)
+                    _release_unfinished_parts(e.__traceback__)
                     raise HTTPBadRequest(_("Invalid request arguments."))
                 items = [item for name in files
                          for item in files.getall(name)]
