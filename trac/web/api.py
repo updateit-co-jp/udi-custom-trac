@@ -518,57 +518,92 @@ _content_length_re = re.compile(r'[0-9]+\Z')
 
 
 class _BoundedInput(object):
-    """Read-only view of a WSGI input stream that stops after `length`
-    bytes, so that a parser can never read past the declared body.
+    """Read-only view of a WSGI input stream limited to `length` bytes.
+
+    The parser can never read past the declared body. `remaining` is the
+    number of declared bytes that have not been returned yet; a non-zero
+    value after parsing means the client closed the connection early.
     """
 
     def __init__(self, fp, length):
         self._fp = fp
-        self._remaining = length
+        self.remaining = length
 
     def read(self, size=-1):
-        if self._remaining <= 0:
+        if self.remaining <= 0:
             return b''
-        if size is None or size < 0 or size > self._remaining:
-            size = self._remaining
+        if size is None or size < 0 or size > self.remaining:
+            size = self.remaining
         data = self._fp.read(size)
-        self._remaining -= len(data)
+        self.remaining -= len(data)
         return data
+
+    def drain(self):
+        """Consume the rest of the declared body, stopping at end of input."""
+        while self.remaining > 0:
+            if not self.read(min(_READ_CHUNK_SIZE, self.remaining)):
+                break
+
+
+_READ_CHUNK_SIZE = 64 * 1024
 
 
 def _form_body_input(environ, limit):
-    """Validate the declared length of a form body before reading it.
+    """Validate the body of a form submission before reading it.
 
-    Returns a `(stream, length)` tuple where `stream` yields at most
-    `length` bytes of `wsgi.input`. Raises an HTTP error without reading
-    the body when the declared length is missing, malformed or larger
-    than `limit`.
+    Returns `(stream, length)`, where `stream` yields exactly `length`
+    bytes of the body. Raises an HTTP error without reading the body
+    when the declared length is larger than `limit`, malformed, or
+    missing on a stream that does not signal its own end.
+
+    When the server signals the end of input with `wsgi.input_terminated`
+    and no length is declared, the body is read into memory up to `limit`.
     """
-    value = environ.get('CONTENT_LENGTH')
-    if value is None:
+    value = (environ.get('CONTENT_LENGTH') or '').strip()
+    if value:
+        if not _content_length_re.match(value):
+            raise HTTPBadRequest(_("Invalid Content-Length header."))
+        length = int(value)
+        if length > limit:
+            raise HTTPRequestEntityTooLarge(
+                _("Form body of %(length)s bytes exceeds the limit of "
+                  "%(limit)s bytes.", length=length, limit=limit))
+        return _BoundedInput(environ['wsgi.input'], length), length
+
+    if not environ.get('wsgi.input_terminated'):
         raise HTTPLengthRequired(_("Form submissions must include a "
                                    "Content-Length header."))
-    value = value.strip()
-    if not _content_length_re.match(value):
-        raise HTTPBadRequest(_("Invalid Content-Length header."))
-    length = int(value)
-    if length > limit:
-        raise HTTPRequestEntityTooLarge(
-            _("Form body of %(length)s bytes exceeds the limit of "
-              "%(limit)s bytes.", length=length, limit=limit))
-    return _BoundedInput(environ['wsgi.input'], length), length
+    data = _read_to_end(environ['wsgi.input'], limit)
+    return _BoundedInput(io.BytesIO(data), len(data)), len(data)
 
 
-def _read_exactly(fp, length):
+def _read_to_end(fp, limit):
+    """Read a stream until end of input, failing if it exceeds `limit`."""
     chunks = []
-    remaining = length
-    while remaining > 0:
-        chunk = fp.read(remaining)
+    total = 0
+    while True:
+        chunk = fp.read(min(_READ_CHUNK_SIZE, limit + 1 - total))
         if not chunk:
             break
         chunks.append(chunk)
-        remaining -= len(chunk)
+        total += len(chunk)
+        if total > limit:
+            raise HTTPRequestEntityTooLarge(
+                _("Form body exceeds the limit of %(limit)s bytes.",
+                  limit=limit))
     return b''.join(chunks)
+
+
+def _ensure_complete_body(fp, files=()):
+    """Consume the rest of a bounded form body and reject it if the client
+    sent fewer bytes than it declared. Files already spooled by the parser
+    are closed before the error is raised.
+    """
+    fp.drain()
+    if fp.remaining:
+        for item in files:
+            item.close()
+        raise HTTPBadRequest(_("Incomplete request body."))
 
 
 if multipart:
@@ -592,7 +627,8 @@ if multipart:
 
         if ctype == 'application/x-www-form-urlencoded':
             fp, length = _form_body_input(environ, max_urlencoded_size)
-            data = _read_exactly(fp, length)
+            data = _read_to_end(fp, length)
+            _ensure_complete_body(fp)
             pairs = urllib.parse.parse_qsl(
                 str(data, 'utf-8'), keep_blank_values=True,
                 strict_parsing=False, encoding='utf-8', errors='strict')
@@ -603,13 +639,16 @@ if multipart:
             return
 
         if ctype == 'multipart/form-data':
-            fp, _length = _form_body_input(environ, max_multipart_size)
-            form_environ = dict(environ, **{'wsgi.input': fp})
+            fp, length = _form_body_input(environ, max_multipart_size)
+            form_environ = dict(environ, **{'wsgi.input': fp,
+                                            'CONTENT_LENGTH': str(length)})
             try:
                 forms, files = multipart.parse_form_data(
                     form_environ, charset='utf-8', strict=False)
             except multipart.MultipartError:
                 raise HTTPBadRequest(_("Invalid request arguments."))
+            _ensure_complete_body(fp, [item for name in files
+                                       for item in files.getall(name)])
             try:
                 for name in forms:
                     _raise_if_null_bytes(name)
@@ -664,7 +703,8 @@ else:
             limit = (max_urlencoded_size
                      if ctype == 'application/x-www-form-urlencoded'
                      else max_multipart_size)
-            fp, _length = _form_body_input(environ, limit)
+            fp, length = _form_body_input(environ, limit)
+            environ['CONTENT_LENGTH'] = str(length)
 
         # Python 2.6 introduced a backwards incompatible change for
         # FieldStorage where QUERY_STRING is no longer ignored for POST
@@ -673,6 +713,8 @@ else:
             environ.pop('QUERY_STRING', '')
         fs = _FieldStorage(fp, environ=environ, keep_blank_values=True,
                            errors='strict')
+        if isinstance(fp, _BoundedInput):
+            _ensure_complete_body(fp)
         for value in fs.list or ():
             name = value.name
             _raise_if_null_bytes(name)
@@ -1136,20 +1178,31 @@ class Request(object):
         """Parse the supplied request parameters into a list of
         `(name, value)` tuples.
         """
+        # The body can only be read once, so a failed parse is remembered
+        # and raised again for later accesses instead of parsing the body
+        # a second time.
+        if '_arg_list_error' in self.__dict__:
+            raise self.__dict__['_arg_list_error']
         try:
             return list(parse_form_data(
                 self.environ,
                 max_urlencoded_size=self.max_urlencoded_body_size,
                 max_multipart_size=self.max_multipart_body_size))
         except UnicodeDecodeError as e:
-            raise HTTPBadRequest(_("Invalid encoding in form data: %(msg)s",
-                                   msg=exception_to_unicode(e)))
+            error = HTTPBadRequest(_("Invalid encoding in form data: %(msg)s",
+                                     msg=exception_to_unicode(e)))
         except IOError as e:
-            if is_client_disconnect_exception(e):
-                raise HTTPBadRequest(
-                    _("Exception caught while reading request: %(msg)s",
-                      msg=exception_to_unicode(e)))
+            if not is_client_disconnect_exception(e):
+                self.__dict__['_arg_list_error'] = e
+                raise
+            error = HTTPBadRequest(
+                _("Exception caught while reading request: %(msg)s",
+                  msg=exception_to_unicode(e)))
+        except Exception as e:
+            self.__dict__['_arg_list_error'] = e
             raise
+        self.__dict__['_arg_list_error'] = error
+        raise error
 
     def _parse_cookies(self):
         cookies = Cookie()

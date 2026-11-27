@@ -1018,8 +1018,73 @@ class FormBodyLimitTestCase(unittest.TestCase):
             req.arg_list
         self.assertEqual(0, stream.read_calls)
 
+    def test_empty_content_length_is_treated_as_missing(self):
+        req, stream = self._post(b'a=1', 'application/x-www-form-urlencoded',
+                                 content_length='')
+        with self.assertRaises(HTTPLengthRequired):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_terminated_input_without_length_is_read_up_to_limit(self):
+        body = b'a=1&b=2'
+        stream = _RecordingInput(body)
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream, 'wsgi.input_terminated': True,
+            'CONTENT_TYPE': 'application/x-www-form-urlencoded'})
+        req = Request(environ, None)
+        req.max_urlencoded_body_size = len(body)
+        self.assertEqual([('a', '1'), ('b', '2')], req.arg_list)
+
+    def test_terminated_input_over_limit_is_rejected(self):
+        body = b'a=1&b=2'
+        stream = _RecordingInput(body)
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream, 'wsgi.input_terminated': True,
+            'CONTENT_TYPE': 'application/x-www-form-urlencoded'})
+        req = Request(environ, None)
+        req.max_urlencoded_body_size = len(body) - 1
+        with self.assertRaises(HTTPRequestEntityTooLarge):
+            req.arg_list
+
+    def test_terminated_multipart_without_length_is_parsed(self):
+        body = self._multipart_body((b'field', b'', b'value'))
+        stream = _RecordingInput(body)
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream, 'wsgi.input_terminated': True,
+            'CONTENT_TYPE': self._multipart_ctype()})
+        req = Request(environ, None)
+        self.assertEqual([('field', 'value')], req.arg_list)
+
+    def test_truncated_urlencoded_body_is_rejected(self):
+        # Declared 10 bytes, but the client closed the connection after 5
+        req, _stream = self._post(b'a=12345',
+                                  'application/x-www-form-urlencoded',
+                                  content_length='10')
+        with self.assertRaises(HTTPBadRequest):
+            req.arg_list
+
+    def test_truncated_multipart_body_is_rejected(self):
+        body = self._multipart_body((b'field', b'', b'value'))
+        req, _stream = self._post(body, self._multipart_ctype(),
+                                  content_length=str(len(body) + 50))
+        with self.assertRaises(HTTPBadRequest):
+            req.arg_list
+
+    def test_failed_parse_is_not_repeated(self):
+        body = b'a=1'
+        req, stream = self._post(body, 'application/x-www-form-urlencoded',
+                                 content_length='10')
+        with self.assertRaises(HTTPBadRequest):
+            req.arg_list
+        reads = stream.read_calls
+        with self.assertRaises(HTTPBadRequest):
+            req.args
+        with self.assertRaises(HTTPBadRequest):
+            req.arg_list
+        self.assertEqual(reads, stream.read_calls)
+
     def test_invalid_content_length_is_bad_request(self):
-        for value in ('', '-1', '+5', 'abc', '1e3', '1 2', '1.0'):
+        for value in ('-1', '+5', 'abc', '1e3', '1 2', '1.0'):
             with self.subTest(value=value):
                 req, stream = self._post(b'a=1',
                                          'application/x-www-form-urlencoded',
