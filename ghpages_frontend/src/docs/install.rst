@@ -96,8 +96,13 @@ OS 管理者が Ubuntu の ``apache2-utils`` を導入し、``trac`` ユーザ�
 
    uv run --no-project tracd --hostname 127.0.0.1 --port 8000 --single-env "$PWD/project"
 
-systemd で常時起動する
-----------------------------------------------
+systemd daemon を使ってtracの稼働を監理する
+------------------------------------------------------
+
+uv、Python、仮想環境は ``trac`` ユーザーのホームディレクトリにあります。
+systemd のシステムサービスに ``User=trac`` と ``WorkingDirectory`` を指定すると、
+Trac はこのユーザーの仮想環境で動作し、OS 管理者は ``trac`` ユーザーに切り替えずに
+``sudo systemctl`` で起動・停止・再起動できます。
 
 OS 管理者が ``/etc/systemd/system/trac.service`` を作成します。
 ``ExecStart`` の uv のパスは、``trac`` ユーザーで実行した ``command -v uv`` の結果に合わせてください。
@@ -119,12 +124,25 @@ OS 管理者が ``/etc/systemd/system/trac.service`` を作成します。
    [Install]
    WantedBy=multi-user.target
 
+ユニットを読み込み、今すぐ起動するとともに OS 起動時の自動起動を有効にします。
+
 .. code-block::
 
    sudo systemctl daemon-reload
    sudo systemctl enable --now trac.service
+
+日常の運用には次のコマンドを使います。
+
+.. code-block:: sh
+
+   sudo systemctl start trac.service     # 起動
+   sudo systemctl stop trac.service      # 停止
+   sudo systemctl restart trac.service   # 再起動
    sudo systemctl status trac.service
    sudo journalctl -u trac.service -n 50
+
+``trac.service`` を編集したときは ``sudo systemctl daemon-reload`` の後に再起動します。
+``trac.ini`` の変更を反映する場合は ``sudo systemctl restart trac.service`` を実行します。
 
 HTTPS で公開する
 --------------------------------
