@@ -36,7 +36,9 @@ Python はスペース4個で字下げし、関数名・変数名は `snake_case
 
 Forked Repository のため、元の最終開発版`1.7.1`を引きつぎ`1.8.0-dev` から開発を再開するものとする。
 
-GitHub側でISSUE（Branch）を切っていてそれについての作業あれば、ブランチにコミットをする。特に指定がなければmainに直接コミットプッシュを許可する。
+GitHub側でISSUE（Branch）を切っていてそれについての作業あれば、ブランチにコミットをする。特に指定がなければmainに直接コミットプッシュを許可。
+
+PUSH先は`github.com:updateit-co-jp/udi-custom-trac.git`であり、フォーク元にプルリクを投げるなどは一切禁止とする。
 
 ## 完了報告（必須）
 
