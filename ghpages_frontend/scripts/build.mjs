@@ -73,6 +73,13 @@ const site = {
   repoUrl: 'https://github.com/updateit-co-jp/udi-custom-trac',
   releasesUrl: 'https://github.com/updateit-co-jp/udi-custom-trac/releases',
   guides: rstPages,
+  // Update these together with each release; the top page shows them.
+  release: {
+    tag: 'v1.8.0-dev-20261127',
+    date: '2026-11-27',
+    version: '1.8.0.dev0',
+    kind: '開発版（Pre-release）',
+  },
 };
 
 function renderRst(sources) {

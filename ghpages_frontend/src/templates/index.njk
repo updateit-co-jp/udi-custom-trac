@@ -1,154 +1,159 @@
 {% extends "base.njk" %}
 
 {% block content %}
-{# Icons are inline SVG, drawn with currentColor so they follow the theme. #}
-{% set icons = {
-  ticket: '<path d="M4 8a2 2 0 0 0 0 4v4h16v-4a2 2 0 0 1 0-4V4H4z" /><path d="M14 4v3M14 11v2M14 17v3" />',
-  wiki: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" /><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />',
-  repo: '<circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="8" r="2.5" /><path d="M6 8.5v7M8.5 6h4a3 3 0 0 1 3 3v0" />',
-  report: '<path d="M4 20V4" /><path d="M4 20h16" /><rect x="7" y="11" width="3" height="6" rx="0.5" /><rect x="12" y="7" width="3" height="10" rx="0.5" /><rect x="17" y="13" width="2" height="4" rx="0.5" />',
-  arrow: '<path d="M5 12h14M13 6l6 6-6 6" />'
-} %}
+{% set rel = site.release %}
+{% set tagUrl = site.releasesUrl + '/tag/' + rel.tag %}
 
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div class="hero-copy">
-      <p class="eyebrow">Trac フォーク版 / update it</p>
-      <h1>課題管理と Git 連携を、<br>wheel 1 つで導入。</h1>
-      <p class="lead">
-        チケット、Wiki、リポジトリ閲覧を備えた Trac のフォーク版です。
-        uv で環境を作り、systemd で常時起動するまでの手順をガイドにまとめています。
+<section class="masthead">
+  <div class="wrap masthead-grid">
+    <div>
+      <p class="top-label">Trac フォーク版</p>
+      <h1>{{ site.name }}</h1>
+      <p class="masthead-lead">
+        本家 Trac 1.7.1 を基にした、update it のフォーク版です。
+        チケット管理、Wiki、Git / Subversion のリポジトリ連携を提供します。
       </p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="{{ site.releasesUrl }}" rel="noopener">最新版をダウンロード</a>
-        <a class="btn btn-ghost" href="install.html">インストール手順</a>
-      </div>
-      <ul class="meta-list">
+      <ul class="facts-inline">
+        <li>版 {{ rel.version }}</li>
         <li>Python 3.13 以上</li>
-        <li>導入例は SQLite</li>
-        <li>日本語 UI</li>
+        <li>Modified BSD License</li>
       </ul>
     </div>
 
-    <div class="terminal" aria-label="導入コマンドの例">
-      <div class="terminal-bar">
-        <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="terminal-title">導入コマンド</span>
-        <button class="copy-btn" type="button" data-copy="install-commands">コピー</button>
+    <aside class="download-panel" aria-labelledby="latest-title">
+      <h2 id="latest-title">最新版</h2>
+      <dl class="kv">
+        <dt>タグ</dt><dd><code>{{ rel.tag }}</code></dd>
+        <dt>公開日</dt><dd>{{ rel.date }}</dd>
+        <dt>種別</dt><dd>{{ rel.kind }}</dd>
+        <dt>正式版</dt><dd>まだ公開していません</dd>
+      </dl>
+      <div class="panel-actions">
+        <a class="btn btn-primary" href="{{ tagUrl }}" rel="noopener">wheel をダウンロード</a>
+        <a class="btn btn-ghost" href="install.html">インストール手順</a>
       </div>
-<pre id="install-commands"><code>mkdir -p ~/udi-custom-trac &amp;&amp; cd ~/udi-custom-trac
-uv python install 3.14
-uv venv --no-project --python 3.14 --managed-python .venv
-uv pip install --python .venv/bin/python \
-  /path/to/trac-X.Y.Z-py3-none-any.whl Babel
-uv run --no-project tracd --version</code></pre>
-    </div>
+    </aside>
   </div>
 </section>
 
-<section class="section" id="install">
+<section class="top-section" id="news">
   <div class="wrap">
-    <header class="section-head">
-      <p class="eyebrow">導入の流れ</p>
-      <h2>3 ステップで立ち上げる</h2>
-    </header>
-
-    <ol class="steps">
+    <h2>ニュース</h2>
+    <ul class="news-list">
       <li>
-        <span class="step-no">1</span>
+        <time datetime="{{ rel.date }}">{{ rel.date }}</time>
         <div>
-          <h3>wheel を取得する</h3>
-          <p>GitHub Releases から wheel を取得します。日付付き開発版は <code>.devYYYYMMDD</code> を含むファイル名です。</p>
+          <a href="{{ tagUrl }}" rel="noopener"><strong>{{ rel.tag }}</strong> を公開</a>
+          <p>同日に反映した主な変更です。</p>
+          <ul class="plain-list">
+            <li>フォームの URL エンコードとマルチパート送信に本文サイズの上限を設定</li>
+            <li>マルチパート解析の異常系を修正し、途中で失敗したアップロードの後始末を明示化</li>
+            <li>systemd による日々の運用手順を追加</li>
+            <li>HTTPS 公開の手順と、本家 Trac 1.6.x からの移行手順を追加</li>
+          </ul>
         </div>
       </li>
-      <li>
-        <span class="step-no">2</span>
-        <div>
-          <h3>uv で環境を作る</h3>
-          <p>Python 3.14 を uv で用意し、wheel と Babel を入れた仮想環境を作ります。</p>
-        </div>
-      </li>
-      <li>
-        <span class="step-no">3</span>
-        <div>
-          <h3>プロジェクトを作り、常時起動する</h3>
-          <p><code>trac-admin</code> でプロジェクトを作成し、systemd で <code>tracd</code> を常駐させます。</p>
-        </div>
-      </li>
-    </ol>
-  </div>
-</section>
-
-<section class="section section-alt" id="features">
-  <div class="wrap">
-    <header class="section-head">
-      <p class="eyebrow">Trac でできること</p>
-      <h2>課題と履歴を行き来できる</h2>
-    </header>
-
-    <div class="grid grid-4">
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.ticket | safe }}</svg></span>
-        <h3>チケット管理</h3>
-        <p>課題・バグ・作業を、担当・状態・優先度で追跡します。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.wiki | safe }}</svg></span>
-        <h3>Wiki</h3>
-        <p>設計メモや手順を残し、チケットや変更履歴からリンクします。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.repo | safe }}</svg></span>
-        <h3>Git / Subversion 連携</h3>
-        <p>リポジトリ履歴をブラウズし、コミットからチケットを参照します。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.report | safe }}</svg></span>
-        <h3>レポート</h3>
-        <p>条件を指定した一覧や集計で、進捗を確認します。</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="fork">
-  <div class="wrap split">
-    <div>
-      <p class="eyebrow">フォーク版の追加点</p>
-      <h2>運用に必要な手順を揃えた</h2>
-      <p>本家 Trac をベースに、update it の環境で運用するための手順と安全対策を加えています。</p>
-    </div>
-    <ul class="check-list">
-      <li><strong>uv 中心の導入。</strong>Python 3.14 を uv で用意し、wheel を入れるだけで環境が整います。</li>
-      <li><strong>systemd での常時運用。</strong>サービス化と日々の運用手順をまとめています。</li>
-      <li><strong>HTTPS 公開の手順。</strong>Apache2 経由と tracd 単独の二通りを案内します。</li>
-      <li><strong>フォーム送信のサイズ上限。</strong>URL エンコードとマルチパートの本文に上限を設けています。</li>
-      <li><strong>本家 Trac 1.6.x からの移行。</strong>リハーサルと切り戻しの手順つきです。</li>
-      <li><strong>GitHub Releases で配布。</strong>正式版に加え、日付付きの開発版も公開します。</li>
     </ul>
   </div>
 </section>
 
-<section class="section section-alt" id="guides">
+<section class="top-section section-muted" id="download">
   <div class="wrap">
-    <header class="section-head">
-      <p class="eyebrow">ガイド</p>
-      <h2>目的に合わせて読む</h2>
-    </header>
+    <h2>ダウンロード</h2>
+    <table class="dl-table">
+      <thead>
+        <tr><th scope="col">種類</th><th scope="col">版</th><th scope="col">入手先</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>wheel（開発版）</td>
+          <td><code>{{ rel.tag }}</code></td>
+          <td><a href="{{ tagUrl }}" rel="noopener">GitHub Releases</a></td>
+        </tr>
+        <tr>
+          <td>wheel（正式版）</td>
+          <td>—</td>
+          <td>まだ公開していません</td>
+        </tr>
+        <tr>
+          <td>ソースコード</td>
+          <td>main ブランチ</td>
+          <td><a href="{{ site.repoUrl }}" rel="noopener">GitHub リポジトリ</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note-text">動作には Python 3.13 以上が必要です。導入には uv を使う手順を案内しています。</p>
+  </div>
+</section>
 
+<section class="top-section" id="docs">
+  <div class="wrap">
+    <h2>ドキュメント</h2>
     <ul class="guide-list">
       {% for guide in site.guides %}
       <li>
         <a class="guide-row" href="{{ guide.output }}">
           <span class="guide-row-main">
-            <span class="card-kicker">{{ guide.nav }}</span>
             <span class="guide-row-title">{{ guide.title }}</span>
             <span class="guide-row-summary">{{ guide.summary }}</span>
           </span>
-          <span class="card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false">{{ icons.arrow | safe }}</svg></span>
+          <span class="card-arrow" aria-hidden="true">›</span>
         </a>
       </li>
       {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="top-section section-muted" id="about">
+  <div class="wrap">
+    <h2>Trac でできること</h2>
+    <p class="section-intro">Trac は、Web で動く課題管理とプロジェクト管理のツールです。</p>
+    <dl class="feature-list">
+      <div>
+        <dt>チケット管理</dt>
+        <dd>課題・バグ・作業を登録し、担当、状態、優先度で追跡します。</dd>
+      </div>
+      <div>
+        <dt>Wiki</dt>
+        <dd>設計メモや手順を残し、チケットや変更履歴からリンクします。</dd>
+      </div>
+      <div>
+        <dt>Git / Subversion 連携</dt>
+        <dd>リポジトリの履歴をブラウズし、コミットからチケットを参照します。</dd>
+      </div>
+      <div>
+        <dt>レポート</dt>
+        <dd>条件を指定した一覧や集計で、進捗を確認します。</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section class="top-section" id="license">
+  <div class="wrap">
+    <h2>ライセンス</h2>
+    <p>
+      Trac は Modified BSD License で配布されています。全文は
+      <a href="https://github.com/updateit-co-jp/udi-custom-trac/blob/main/COPYING" rel="noopener">COPYING</a>
+      を参照してください。
+    </p>
+    <div class="copyright-block">
+      <p>Copyright (C) 2003-2026 Edgewall Software.</p>
+      <p>Copyright (c) 2006-2026 update it, Inc.</p>
+      <p>All rights reserved.</p>
+    </div>
+  </div>
+</section>
+
+<section class="top-section section-muted" id="links">
+  <div class="wrap">
+    <h2>関連リンク</h2>
+    <ul class="link-list">
+      <li><a href="https://trac.edgewall.org/" rel="noopener">本家 Trac（trac.edgewall.org）</a></li>
+      <li><a href="https://trac.edgewall.org/wiki/MailingList" rel="noopener">本家 Trac のメーリングリスト</a></li>
+      <li><a href="{{ site.repoUrl }}" rel="noopener">GitHub リポジトリ</a></li>
+      <li><a href="{{ site.releasesUrl }}" rel="noopener">リリース一覧</a></li>
     </ul>
   </div>
 </section>

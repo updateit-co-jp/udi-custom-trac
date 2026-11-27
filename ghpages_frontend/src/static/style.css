@@ -1245,3 +1245,244 @@ main:has(.doc-layout) {
   justify-self: start;
   margin-bottom: 4px;
 }
+
+/* ---------- top page: software distribution layout ---------- */
+
+.masthead {
+  padding: clamp(40px, 6vw, 72px) 0 clamp(36px, 5vw, 56px);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.masthead-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: start;
+}
+
+.masthead h1 {
+  font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
+  margin: 0 0 0.5em;
+  letter-spacing: -0.02em;
+}
+
+.top-label {
+  margin: 0 0 0.6em;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.masthead-lead {
+  font-size: 1.05rem;
+  color: var(--color-muted);
+  margin: 0 0 1.2em;
+  max-width: 36em;
+}
+
+.facts-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.download-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.download-panel h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  border: 0;
+  padding: 0;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0 0 18px;
+  font-size: 0.93rem;
+}
+
+.kv dt {
+  color: var(--color-muted);
+}
+
+.kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.kv code {
+  font-size: 0.85em;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.top-section {
+  padding: clamp(40px, 6vw, 64px) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.top-section h2 {
+  font-size: 1.4rem;
+  margin: 0 0 1em;
+}
+
+.section-muted {
+  background: var(--color-surface);
+}
+
+.section-intro {
+  color: var(--color-muted);
+  margin: -0.4em 0 1.2em;
+}
+
+.news-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 820px;
+}
+
+.news-list > li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.news-list time {
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.news-list p {
+  color: var(--color-muted);
+  font-size: 0.93rem;
+  margin: 0.2em 0 0.6em;
+}
+
+.plain-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 0.93rem;
+  color: var(--color-muted);
+}
+
+.plain-list li {
+  margin-bottom: 0.25em;
+}
+
+.dl-table {
+  width: 100%;
+  max-width: 820px;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.dl-table th,
+.dl-table td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: top;
+}
+
+.dl-table th {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.note-text {
+  margin: 14px 0 0;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.feature-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 40px;
+  margin: 0;
+  max-width: 860px;
+}
+
+.feature-list > div {
+  padding: 16px 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.feature-list dt {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.feature-list dd {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.94rem;
+}
+
+.copyright-block {
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.copyright-block p {
+  margin: 0.2em 0;
+}
+
+.link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.link-list a {
+  font-weight: 600;
+}
+
+.guide-list .card-arrow {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+@media (max-width: 899px) {
+  .masthead-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .feature-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .news-list > li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
