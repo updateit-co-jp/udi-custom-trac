@@ -27,7 +27,8 @@ SETTINGS = {
     # Fail the build on errors (level 3) and show warnings (level 2).
     'report_level': 2,
     'halt_level': 3,
-    'syntax_highlight': 'short',
+    # Render language-tagged code blocks without requiring Pygments.
+    'syntax_highlight': 'none',
 }
 
 
