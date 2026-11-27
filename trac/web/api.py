@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import tempfile
+import traceback
 import urllib.parse
 
 try:
@@ -639,9 +640,16 @@ if multipart:
                 form_environ = dict(environ, **{
                     'wsgi.input': spool, 'CONTENT_LENGTH': str(length)})
                 try:
+                    # ignore_errors=False: a structurally invalid body is an
+                    # error, not a partial form to be processed
                     forms, files = multipart.parse_form_data(
-                        form_environ, charset='utf-8', strict=False)
-                except multipart.MultipartError:
+                        form_environ, charset='utf-8', strict=False,
+                        ignore_errors=False)
+                except multipart.MultipartError as e:
+                    # The parser's frames hold the upload it was writing when
+                    # it failed. Clear them so that upload's temporary file
+                    # is closed rather than kept alive by the traceback.
+                    traceback.clear_frames(e.__traceback__)
                     raise HTTPBadRequest(_("Invalid request arguments."))
                 items = [item for name in files
                          for item in files.getall(name)]

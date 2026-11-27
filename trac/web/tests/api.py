@@ -13,11 +13,13 @@
 
 from datetime import datetime
 import errno
+import gc
 import io
 import os.path
 import tempfile
 import unittest
 import unittest.mock
+import weakref
 
 from trac import perm
 from trac.config import ConfigurationError
@@ -1159,6 +1161,35 @@ class FormBodyLimitTestCase(unittest.TestCase):
             with self.assertRaises(HTTPBadRequest):
                 req.arg_list
         self.assertEqual([], calls)
+
+    def test_structurally_broken_multipart_is_rejected_and_files_closed(self):
+        # The body is fully received but the closing boundary is missing, and
+        # the upload is large enough to be spooled to a temporary file. The
+        # structural error must become a 400 and the temporary files must be
+        # closed.
+        body = self._multipart_body((b'field', b'', b'value'),
+                                    (b'attachment', b'ok.txt', b'1' * 90000))
+        body = body[:body.rindex(b'--' + self.boundary + b'--')]
+        req, _stream = self._post(body, self._multipart_ctype())
+        # Keep weak references only, so this test does not keep files alive
+        created = []
+        make_temp_file = tempfile.TemporaryFile
+
+        def spy_temp_file(*args, **kwargs):
+            file_ = make_temp_file(*args, **kwargs)
+            created.append(weakref.ref(file_))
+            return file_
+
+        with unittest.mock.patch.object(tempfile, 'TemporaryFile',
+                                        spy_temp_file):
+            with self.assertRaises(HTTPBadRequest):
+                req.arg_list
+        gc.collect()
+        self.assertTrue(created)
+        # Every temporary file is closed, or has already been released
+        for ref in created:
+            file_ = ref()
+            self.assertTrue(file_ is None or file_.closed)
 
     def test_server_side_read_error_is_not_a_client_error(self):
         # EIO is a failure on the server, so it must not turn into a 400
