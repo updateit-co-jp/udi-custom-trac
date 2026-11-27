@@ -7,94 +7,42 @@
   wiki: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" /><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z" />',
   repo: '<circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="8" r="2.5" /><path d="M6 8.5v7M8.5 6h4a3 3 0 0 1 3 3v0" />',
   report: '<path d="M4 20V4" /><path d="M4 20h16" /><rect x="7" y="11" width="3" height="6" rx="0.5" /><rect x="12" y="7" width="3" height="10" rx="0.5" /><rect x="17" y="13" width="2" height="4" rx="0.5" />',
-  book: '<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z" /><path d="M4 20V5M9 8h6" />',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6" />'
 } %}
 
 <section class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="eyebrow">update it / Trac フォーク版</p>
-      <h1>プロジェクトの課題と履歴を、<br>ひとつの軽い Web で。</h1>
+      <p class="eyebrow">Trac フォーク版 / update it</p>
+      <h1>課題管理と Git 連携を、<br>wheel 1 つで導入。</h1>
       <p class="lead">
-        チケット管理、Wiki、Git・Subversion のリポジトリ閲覧を統合した Trac のフォーク版です。
-        wheel 1 つと uv で導入でき、systemd による常時運用の手順まで用意しています。
+        チケット、Wiki、リポジトリ閲覧を備えた Trac のフォーク版です。
+        uv で環境を作り、systemd で常時起動するまでの手順をガイドにまとめています。
       </p>
       <div class="cta-row">
         <a class="btn btn-primary" href="{{ site.releasesUrl }}" rel="noopener">最新版をダウンロード</a>
-        <a class="btn btn-ghost" href="install.html">インストール手順を読む</a>
+        <a class="btn btn-ghost" href="install.html">インストール手順</a>
       </div>
       <ul class="meta-list">
         <li>Python 3.13 以上</li>
         <li>導入例は SQLite</li>
-        <li>日本語 UI 対応</li>
+        <li>日本語 UI</li>
       </ul>
     </div>
 
     <div class="terminal" aria-label="導入コマンドの例">
       <div class="terminal-bar">
         <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="terminal-title">導入コマンドの例</span>
+        <span class="terminal-title">導入コマンド</span>
         <button class="copy-btn" type="button" data-copy="install-commands">コピー</button>
       </div>
-<pre id="install-commands"><code>mkdir -p ~/udi-custom-trac
-cd ~/udi-custom-trac
+<pre id="install-commands"><code>mkdir -p ~/udi-custom-trac &amp;&amp; cd ~/udi-custom-trac
 uv python install 3.14
 uv venv --no-project --python 3.14 --managed-python .venv
-uv pip install --python .venv/bin/python /path/to/trac-X.Y.Z-py3-none-any.whl Babel
+uv pip install --python .venv/bin/python \
+  /path/to/trac-X.Y.Z-py3-none-any.whl Babel
 uv run --no-project tracd --version</code></pre>
     </div>
-  </div>
-</section>
-
-<section class="section" id="features">
-  <div class="wrap">
-    <header class="section-head">
-      <p class="eyebrow">Trac でできること</p>
-      <h2>開発の文脈を、ひとつの画面に集める</h2>
-      <p>課題・知識・コードの履歴を行き来できるので、「なぜこの変更をしたのか」を後から辿れます。</p>
-    </header>
-
-    <div class="grid grid-4">
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.ticket | safe }}</svg></span>
-        <h3>チケット管理</h3>
-        <p>課題・バグ・作業を登録し、担当、状態、優先度で追跡します。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.wiki | safe }}</svg></span>
-        <h3>Wiki</h3>
-        <p>設計メモや手順をプロジェクトの Wiki に残し、チケットや変更履歴からリンクできます。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.repo | safe }}</svg></span>
-        <h3>Git / Subversion 連携</h3>
-        <p>リポジトリの履歴をブラウズし、コミットメッセージからチケットを参照できます。</p>
-      </article>
-      <article class="card">
-        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.report | safe }}</svg></span>
-        <h3>レポート</h3>
-        <p>条件を指定したチケット一覧や集計を作り、進捗を一目で確認できます。</p>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="section section-alt" id="fork">
-  <div class="wrap split">
-    <div>
-      <p class="eyebrow">フォーク版の追加点</p>
-      <h2>導入から運用まで、手順を揃えた</h2>
-      <p>本家 Trac をベースに、update it の環境で運用するための手順と安全対策を加えています。</p>
-    </div>
-    <ul class="check-list">
-      <li><strong>uv 中心の導入。</strong> Python 3.14 を uv で用意し、wheel を入れるだけで環境が整います。</li>
-      <li><strong>systemd での常時運用。</strong> サービス化と日々の運用手順をまとめています。</li>
-      <li><strong>HTTPS 公開の手順。</strong> Apache2 経由と tracd 単独の二通りを案内します。</li>
-      <li><strong>フォーム送信のサイズ上限。</strong> URL エンコードとマルチパートの本文に上限を設けています。</li>
-      <li><strong>本家 Trac 1.6.x からの移行。</strong> リハーサルと切り戻しの手順つきです。</li>
-      <li><strong>GitHub Releases で配布。</strong> 正式版に加え、日付付きの開発版も公開します。</li>
-    </ul>
   </div>
 </section>
 
@@ -110,14 +58,14 @@ uv run --no-project tracd --version</code></pre>
         <span class="step-no">1</span>
         <div>
           <h3>wheel を取得する</h3>
-          <p>GitHub Releases から対象の wheel を取得します。日付付き開発版のファイル名には <code>.devYYYYMMDD</code> が入ります。</p>
+          <p>GitHub Releases から wheel を取得します。日付付き開発版は <code>.devYYYYMMDD</code> を含むファイル名です。</p>
         </div>
       </li>
       <li>
         <span class="step-no">2</span>
         <div>
           <h3>uv で環境を作る</h3>
-          <p>uv で Python 3.14 を用意し、wheel と Babel を入れた仮想環境を作ります。OS の Python のバージョンに左右されません。</p>
+          <p>Python 3.14 を uv で用意し、wheel と Babel を入れた仮想環境を作ります。</p>
         </div>
       </li>
       <li>
@@ -131,37 +79,77 @@ uv run --no-project tracd --version</code></pre>
   </div>
 </section>
 
-<section class="section section-alt" id="guides">
+<section class="section section-alt" id="features">
   <div class="wrap">
     <header class="section-head">
-      <p class="eyebrow">ガイド</p>
-      <h2>状況に合わせて読む</h2>
-      <p>新規導入、既存環境からの移行、更新など、目的のページから読めます。</p>
+      <p class="eyebrow">Trac でできること</p>
+      <h2>課題と履歴を行き来できる</h2>
     </header>
 
-    <div class="grid grid-2">
-      {% for guide in site.guides %}
-      <a class="card card-link" href="{{ guide.output }}">
-        <span class="card-kicker">{{ guide.nav }}</span>
-        <h3>{{ guide.title }}</h3>
-        <p>{{ guide.summary }}</p>
-        <span class="card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false">{{ icons.arrow | safe }}</svg></span>
-      </a>
-      {% endfor %}
+    <div class="grid grid-4">
+      <article class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.ticket | safe }}</svg></span>
+        <h3>チケット管理</h3>
+        <p>課題・バグ・作業を、担当・状態・優先度で追跡します。</p>
+      </article>
+      <article class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.wiki | safe }}</svg></span>
+        <h3>Wiki</h3>
+        <p>設計メモや手順を残し、チケットや変更履歴からリンクします。</p>
+      </article>
+      <article class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.repo | safe }}</svg></span>
+        <h3>Git / Subversion 連携</h3>
+        <p>リポジトリ履歴をブラウズし、コミットからチケットを参照します。</p>
+      </article>
+      <article class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">{{ icons.report | safe }}</svg></span>
+        <h3>レポート</h3>
+        <p>条件を指定した一覧や集計で、進捗を確認します。</p>
+      </article>
     </div>
   </div>
 </section>
 
-<section class="section cta-band">
-  <div class="wrap cta-inner">
+<section class="section" id="fork">
+  <div class="wrap split">
     <div>
-      <h2>まずは wheel を取得して、手元の VM で動かしてみる</h2>
-      <p>導入の詳細と注意点は、各ガイドにまとめています。</p>
+      <p class="eyebrow">フォーク版の追加点</p>
+      <h2>運用に必要な手順を揃えた</h2>
+      <p>本家 Trac をベースに、update it の環境で運用するための手順と安全対策を加えています。</p>
     </div>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="{{ site.releasesUrl }}" rel="noopener">GitHub Releases を開く</a>
-      <a class="btn btn-ghost" href="migration-1.6.html">1.6.x からの移行を検討する</a>
-    </div>
+    <ul class="check-list">
+      <li><strong>uv 中心の導入。</strong>Python 3.14 を uv で用意し、wheel を入れるだけで環境が整います。</li>
+      <li><strong>systemd での常時運用。</strong>サービス化と日々の運用手順をまとめています。</li>
+      <li><strong>HTTPS 公開の手順。</strong>Apache2 経由と tracd 単独の二通りを案内します。</li>
+      <li><strong>フォーム送信のサイズ上限。</strong>URL エンコードとマルチパートの本文に上限を設けています。</li>
+      <li><strong>本家 Trac 1.6.x からの移行。</strong>リハーサルと切り戻しの手順つきです。</li>
+      <li><strong>GitHub Releases で配布。</strong>正式版に加え、日付付きの開発版も公開します。</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section section-alt" id="guides">
+  <div class="wrap">
+    <header class="section-head">
+      <p class="eyebrow">ガイド</p>
+      <h2>目的に合わせて読む</h2>
+    </header>
+
+    <ul class="guide-list">
+      {% for guide in site.guides %}
+      <li>
+        <a class="guide-row" href="{{ guide.output }}">
+          <span class="guide-row-main">
+            <span class="card-kicker">{{ guide.nav }}</span>
+            <span class="guide-row-title">{{ guide.title }}</span>
+            <span class="guide-row-summary">{{ guide.summary }}</span>
+          </span>
+          <span class="card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false">{{ icons.arrow | safe }}</svg></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
   </div>
 </section>
 {% endblock %}
