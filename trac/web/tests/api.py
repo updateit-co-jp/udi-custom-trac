@@ -940,6 +940,20 @@ class _RecordingInput(io.BytesIO):
         return super().read(size)
 
 
+class _FailingInput(io.BytesIO):
+    """`wsgi.input` stand-in that raises a connection error once `fail_at`
+    bytes have been consumed."""
+
+    def __init__(self, data, fail_at):
+        super().__init__(data)
+        self.fail_at = fail_at
+
+    def read(self, size=-1):
+        if self.tell() >= self.fail_at:
+            raise ConnectionResetError('client disconnected')
+        return super().read(size)
+
+
 class FormBodyLimitTestCase(unittest.TestCase):
 
     boundary = b'XyZ'
@@ -1082,6 +1096,72 @@ class FormBodyLimitTestCase(unittest.TestCase):
         with self.assertRaises(HTTPBadRequest):
             req.arg_list
         self.assertEqual(reads, stream.read_calls)
+
+    def test_terminated_large_multipart_is_spooled_and_parsed(self):
+        # Larger than the in-memory spool threshold, so it goes to disk
+        big = b'z' * (200 * 1024)
+        body = self._multipart_body((b'attachment', b'big.bin', big))
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': _RecordingInput(body),
+            'wsgi.input_terminated': True,
+            'CONTENT_TYPE': self._multipart_ctype()})
+        req = Request(environ, None)
+        req.max_multipart_body_size = len(body)
+        files = req.args.getfile('attachment')
+        self.assertEqual('big.bin', files[0])
+        self.assertEqual(big, files[1].read())
+
+    def test_terminated_multipart_over_limit_is_rejected(self):
+        body = self._multipart_body((b'field', b'', b'value' * 100))
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': _RecordingInput(body),
+            'wsgi.input_terminated': True,
+            'CONTENT_TYPE': self._multipart_ctype()})
+        req = Request(environ, None)
+        req.max_multipart_body_size = len(body) - 1
+        with self.assertRaises(HTTPRequestEntityTooLarge):
+            req.arg_list
+
+    def test_huge_content_length_is_too_large_not_an_error(self):
+        req, stream = self._post(b'a=1', 'application/x-www-form-urlencoded',
+                                 content_length='9' * 5000)
+        with self.assertRaises(HTTPRequestEntityTooLarge):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_content_length_with_leading_zeros_is_accepted(self):
+        req, _stream = self._post(b'a=1', 'application/x-www-form-urlencoded',
+                                  content_length='0000003')
+        self.assertEqual([('a', '1')], req.arg_list)
+
+    def test_connection_drop_closes_spooled_uploads(self):
+        # The client disconnects after the whole body was sent but before the
+        # declared length was reached. The spooled upload must be closed and
+        # the request must fail.
+        big = b'1' * 90000
+        body = self._multipart_body((b'attachment', b'ok.txt', big))
+        stream = _FailingInput(body, fail_at=len(body))
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream,
+            'CONTENT_LENGTH': str(len(body) + 50),
+            'CONTENT_TYPE': self._multipart_ctype()})
+        req = Request(environ, None)
+        spooled = []
+        parse = web_api.multipart.parse_form_data
+
+        def spy(*args, **kwargs):
+            forms, files = parse(*args, **kwargs)
+            spooled.extend(item.file for item in files.getall('attachment')
+                           if item.file is not None)
+            return forms, files
+
+        with unittest.mock.patch.object(web_api.multipart,
+                                        'parse_form_data', spy):
+            with self.assertRaises(HTTPBadRequest):
+                req.arg_list
+        self.assertTrue(spooled)
+        for file_ in spooled:
+            self.assertTrue(file_.closed)
 
     def test_invalid_content_length_is_bad_request(self):
         for value in ('-1', '+5', 'abc', '1e3', '1 2', '1.0'):
