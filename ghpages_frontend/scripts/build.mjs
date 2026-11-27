@@ -31,6 +31,8 @@ const python = pythonEnv.includes('/') ? resolve(pythonEnv) : pythonEnv;
 // `title` is the page heading on the site; the RST title is not used.
 const rstPages = [
   { source: 'ghpages_frontend/src/docs/install.rst', output: 'install.html', title: 'インストール手順' },
+  { source: 'ghpages_frontend/src/docs/https.rst', output: 'https.html', title: 'HTTPS で公開する' },
+  { source: 'ghpages_frontend/src/docs/migration-1.6.rst', output: 'migration-1.6.html', title: '本家の Trac 1.6.x から引っ越してくる' },
   { source: 'ghpages_frontend/src/docs/upgrade.rst', output: 'upgrade.html', title: 'アップグレード手順' },
 ];
 

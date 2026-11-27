@@ -2,8 +2,9 @@
 ============================
 
 Ubuntu の仮想マシンで、配布 wheel から Trac を新規導入する手順です。
-構成例は SQLite、単一の Trac プロジェクト、systemd、同じ VM 上の HTTPS リバースプロキシです。
-既存プロジェクトを引き継ぐ場合は、`アップグレード手順 <upgrade.html>`__ を参照してください。
+構成例は SQLite、単一の Trac プロジェクト、systemd です。
+本家 Trac 1.6.x の環境を引き継ぐ場合は `本家の Trac 1.6.x から引っ越してくる <migration-1.6.html>`__、
+フォーク版を更新する場合は `アップグレード手順 <upgrade.html>`__ を参照してください。
 
 動作環境と準備
 ----------------------------
@@ -78,6 +79,8 @@ Trac プロジェクトを作成する
    uv run --no-project trac-admin "$PWD/project" initenv "開発プロジェクト" "sqlite:db/trac.db"
    uv run --no-project trac-admin "$PWD/project" permission add admin TRAC_ADMIN
 
+既定の表示言語を日本語にする場合は、``project/conf/trac.ini`` の ``[trac]`` に ``default_language = ja`` を設定します。
+
 ``admin`` は次に作成する Trac のログイン名です。認証ファイルを使う例では、
 OS 管理者が Ubuntu の ``apache2-utils`` を導入し、``trac`` ユーザーで以下を実行します。
 
@@ -147,48 +150,9 @@ OS 管理者が ``/etc/systemd/system/trac.service`` を作成します。
 HTTPS で公開する
 --------------------------------
 
-公開するホスト名の DNS と TLS 証明書を用意し、同じ VM 上のリバースプロキシから
-``127.0.0.1:8000`` に転送します。nginx の場合は、HTTPS 用の ``server`` ブロックに次を追加します。
-
-.. code-block::
-
-   location / {
-       proxy_pass http://127.0.0.1:8000;
-       proxy_set_header Host $host;
-   }
-
-次の項目を ``project/conf/trac.ini`` の既存の ``[trac]`` セクションに設定します。
-``trac.example.com`` は実際の公開ホスト名に置き換えます。
-
-.. code-block::
-
-   [trac]
-   base_url = https://trac.example.com
-   use_base_url_for_redirect = true
-   secure_cookies = true
-   default_language = ja
-
-プロキシ設定の検証・反映と Trac の再起動後に、公開 URL でページ表示、ログイン、
-チケット登録、添付ファイルのアップロードを確認します。日常のバックアップや wheel の交換手順は
-`アップグレード手順 <upgrade.html>`__ を参照してください。
+`HTTPS 公開ガイド <https.html>`__ で、Apache2 を介する構成と ``tracd`` だけで公開する構成を説明します。
 
 ソースから開発・ビルドする
 ------------------------------------------------------
 
-開発時はソースをチェックアウトしたディレクトリで実行します。
-翻訳のコンパイル後に ``uv sync`` で Trac 本体をインストールします。
-
-.. code-block::
-
-   uv python install 3.14
-   uv sync --no-install-project
-   make PYTHON="uv run --no-sync python" compile
-   uv sync
-   uv run tracd --version
-   make PYTHON="uv run python" wheel
-
-配布用 wheel は ``dist/`` に生成されます。開発時のコマンドやテストは
-`開発ガイド <https://github.com/updateit-co-jp/udi-custom-trac/blob/main/AGENTS.md>`__、
-データベース、リポジトリ連携、その他の構成は
-`インストール原文（英語） <https://github.com/updateit-co-jp/udi-custom-trac/blob/main/INSTALL.rst>`__
-を参照してください。
+`リポジトリの README <https://github.com/updateit-co-jp/udi-custom-trac/blob/main/README.rst>`__ を参照してください。
