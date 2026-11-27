@@ -15,16 +15,20 @@ from datetime import datetime
 import io
 import os.path
 import unittest
+import unittest.mock
 
 from trac import perm
+from trac.config import ConfigurationError
 from trac.core import TracError
 from trac.test import EnvironmentStub, MockPerm, makeSuite, mkdtemp, rmtree
 from trac.util import create_file
 from trac.util.datefmt import timezone, utc
 from trac.util.html import tag
-from trac.web.api import HTTPBadRequest, HTTPInternalServerError, Request, \
-                         RequestDone, parse_arg_list
-from trac.web.main import FakeSession
+from trac.web import api as web_api
+from trac.web.api import HTTPBadRequest, HTTPInternalServerError, \
+                         HTTPLengthRequired, HTTPRequestEntityTooLarge, \
+                         Request, RequestDone, parse_arg_list
+from trac.web.main import FakeSession, RequestDispatcher
 from tracopt.perm.authz_policy import AuthzPolicy
 
 
@@ -924,6 +928,165 @@ class ParseArgListTestCase(unittest.TestCase):
         self.assertEqual('résu&mé', args[1][0])
 
 
+class _RecordingInput(io.BytesIO):
+    """`wsgi.input` stand-in that counts read calls."""
+
+    def __init__(self, data):
+        super().__init__(data)
+        self.read_calls = 0
+
+    def read(self, size=-1):
+        self.read_calls += 1
+        return super().read(size)
+
+
+class FormBodyLimitTestCase(unittest.TestCase):
+
+    boundary = b'XyZ'
+
+    def _multipart_body(self, *parts):
+        body = b''
+        for name, filename, content in parts:
+            body += (b'--' + self.boundary + b'\r\n'
+                     b'Content-Disposition: form-data; name="' + name +
+                     b'"; filename="' + filename + b'"\r\n'
+                     b'Content-Type: text/plain\r\n\r\n' + content + b'\r\n')
+        return body + b'--' + self.boundary + b'--\r\n'
+
+    def _post(self, body, ctype, content_length='default'):
+        stream = _RecordingInput(body)
+        kwargs = {'wsgi.input': stream, 'CONTENT_TYPE': ctype}
+        if content_length == 'default':
+            kwargs['CONTENT_LENGTH'] = str(len(body))
+        elif content_length is not None:
+            kwargs['CONTENT_LENGTH'] = content_length
+        environ = _make_environ(method='POST', **kwargs)
+        return Request(environ, None), stream
+
+    def _multipart_ctype(self):
+        return 'multipart/form-data; boundary=%s' % self.boundary.decode()
+
+    def test_urlencoded_at_limit_is_accepted(self):
+        body = b'a=' + b'x' * 10
+        req, _stream = self._post(body, 'application/x-www-form-urlencoded')
+        req.max_urlencoded_body_size = len(body)
+        self.assertEqual([('a', 'x' * 10)], req.arg_list)
+
+    def test_urlencoded_over_limit_is_rejected_without_reading(self):
+        body = b'a=' + b'x' * 10
+        req, stream = self._post(body, 'application/x-www-form-urlencoded')
+        req.max_urlencoded_body_size = len(body) - 1
+        with self.assertRaises(HTTPRequestEntityTooLarge):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_multipart_at_limit_is_accepted(self):
+        body = self._multipart_body((b'field', b'', b'value'))
+        req, _stream = self._post(body, self._multipart_ctype())
+        req.max_multipart_body_size = len(body)
+        self.assertEqual([('field', 'value')],
+                         [(n, v) for n, v in req.arg_list])
+
+    def test_multipart_over_limit_is_rejected_without_reading(self):
+        body = self._multipart_body((b'field', b'', b'value'))
+        req, stream = self._post(body, self._multipart_ctype())
+        req.max_multipart_body_size = len(body) - 1
+        with self.assertRaises(HTTPRequestEntityTooLarge):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_multipart_limit_does_not_apply_to_urlencoded_bucket(self):
+        # A multipart body limit must not be used for URL-encoded forms
+        body = b'a=1'
+        req, _stream = self._post(body, 'application/x-www-form-urlencoded')
+        req.max_urlencoded_body_size = 3
+        req.max_multipart_body_size = 1
+        self.assertEqual([('a', '1')], req.arg_list)
+
+    def test_missing_content_length_is_length_required(self):
+        req, stream = self._post(b'a=1', 'application/x-www-form-urlencoded',
+                                 content_length=None)
+        with self.assertRaises(HTTPLengthRequired):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_missing_content_length_multipart_is_length_required(self):
+        body = self._multipart_body((b'field', b'', b'value'))
+        req, stream = self._post(body, self._multipart_ctype(),
+                                 content_length=None)
+        with self.assertRaises(HTTPLengthRequired):
+            req.arg_list
+        self.assertEqual(0, stream.read_calls)
+
+    def test_invalid_content_length_is_bad_request(self):
+        for value in ('', '-1', '+5', 'abc', '1e3', '1 2', '1.0'):
+            with self.subTest(value=value):
+                req, stream = self._post(b'a=1',
+                                         'application/x-www-form-urlencoded',
+                                         content_length=value)
+                with self.assertRaises(HTTPBadRequest):
+                    req.arg_list
+                self.assertEqual(0, stream.read_calls)
+
+    def test_declared_length_bounds_the_read(self):
+        # Bytes beyond Content-Length are never consumed from wsgi.input
+        req, stream = self._post(b'a=1EXTRA',
+                                 'application/x-www-form-urlencoded',
+                                 content_length='3')
+        self.assertEqual([('a', '1')], req.arg_list)
+        self.assertEqual(3, stream.tell())
+
+    def test_non_form_body_is_not_limited(self):
+        body = b'{"data": "' + b'x' * 100 + b'"}'
+        req, stream = self._post(body, 'application/json')
+        req.max_urlencoded_body_size = 1
+        req.max_multipart_body_size = 1
+        self.assertEqual([], req.arg_list)
+        self.assertEqual(0, stream.read_calls)
+
+    def test_default_limits_from_configuration(self):
+        env = EnvironmentStub()
+        self.assertEqual((8 * 1024 * 1024, 128 * 1024 * 1024),
+                         RequestDispatcher(env).form_body_size_limits())
+
+    def test_non_positive_limit_is_configuration_error(self):
+        env = EnvironmentStub()
+        env.config.set('trac', 'max_multipart_body_size', '0')
+        with self.assertRaises(ConfigurationError):
+            RequestDispatcher(env).form_body_size_limits()
+
+    def test_get_request_is_not_limited(self):
+        environ = _make_environ_qs('GET', b'a=1&b=2')
+        req = Request(environ, None)
+        req.max_urlencoded_body_size = 1
+        self.assertEqual([('a', '1'), ('b', '2')], req.arg_list)
+
+    def test_multipart_temp_files_are_closed_on_error(self):
+        # The first part is larger than the parser's in-memory spool limit
+        # (64 KiB), so it is stored in a temporary file. The second part has
+        # a NUL in its filename, so parsing fails after that file was made.
+        body = self._multipart_body((b'attachment', b'ok.txt', b'1' * 90000),
+                                    (b'attachment', b'bad\x00.txt', b'two'))
+        req, _stream = self._post(body, self._multipart_ctype())
+        spooled_files = []
+        parse = web_api.multipart.parse_form_data
+
+        def spy(*args, **kwargs):
+            forms, files = parse(*args, **kwargs)
+            spooled_files.extend(
+                item.file for item in files.getall('attachment')
+                if item.file is not None)
+            return forms, files
+
+        with unittest.mock.patch.object(web_api.multipart,
+                                        'parse_form_data', spy):
+            with self.assertRaises(HTTPBadRequest):
+                req.arg_list
+        self.assertEqual(2, len(spooled_files))
+        for file_ in spooled_files:
+            self.assertTrue(file_.closed)
+
+
 class HTTPExceptionTestCase(unittest.TestCase):
 
     def test_tracerror_with_string_as_argument(self):
@@ -958,6 +1121,7 @@ def test_suite():
     suite.addTest(makeSuite(RequestTestCase))
     suite.addTest(makeSuite(RequestSendFileTestCase))
     suite.addTest(makeSuite(ParseArgListTestCase))
+    suite.addTest(makeSuite(FormBodyLimitTestCase))
     suite.addTest(makeSuite(HTTPExceptionTestCase))
     return suite
 

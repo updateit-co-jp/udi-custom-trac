@@ -267,6 +267,12 @@ for code in [code for code in HTTP_STATUS if code >= 400]:
     _HTTPException_subclass_names.append(exc_name)
 del code, exc_name
 
+# Defined explicitly: the generated name follows the stdlib status text,
+# which changed for 413 in Python 3.14 ("Content Too Large").
+HTTPRequestEntityTooLarge = HTTPException.subclass(
+    'HTTPRequestEntityTooLarge', 413)
+_HTTPException_subclass_names.append('HTTPRequestEntityTooLarge')
+
 
 class _RequestArgs(dict):
     """Dictionary subclass that provides convenient access to request
@@ -502,11 +508,76 @@ def _raise_if_null_bytes(value):
         raise HTTPBadRequest(_("Invalid request arguments."))
 
 
+# Default upper bounds for the body of a URL-encoded or multipart form
+# submission. Overridable with [trac] max_urlencoded_body_size and
+# max_multipart_body_size.
+DEFAULT_MAX_URLENCODED_BODY_SIZE = 8 * 1024 * 1024
+DEFAULT_MAX_MULTIPART_BODY_SIZE = 128 * 1024 * 1024
+
+_content_length_re = re.compile(r'[0-9]+\Z')
+
+
+class _BoundedInput(object):
+    """Read-only view of a WSGI input stream that stops after `length`
+    bytes, so that a parser can never read past the declared body.
+    """
+
+    def __init__(self, fp, length):
+        self._fp = fp
+        self._remaining = length
+
+    def read(self, size=-1):
+        if self._remaining <= 0:
+            return b''
+        if size is None or size < 0 or size > self._remaining:
+            size = self._remaining
+        data = self._fp.read(size)
+        self._remaining -= len(data)
+        return data
+
+
+def _form_body_input(environ, limit):
+    """Validate the declared length of a form body before reading it.
+
+    Returns a `(stream, length)` tuple where `stream` yields at most
+    `length` bytes of `wsgi.input`. Raises an HTTP error without reading
+    the body when the declared length is missing, malformed or larger
+    than `limit`.
+    """
+    value = environ.get('CONTENT_LENGTH')
+    if value is None:
+        raise HTTPLengthRequired(_("Form submissions must include a "
+                                   "Content-Length header."))
+    value = value.strip()
+    if not _content_length_re.match(value):
+        raise HTTPBadRequest(_("Invalid Content-Length header."))
+    length = int(value)
+    if length > limit:
+        raise HTTPRequestEntityTooLarge(
+            _("Form body of %(length)s bytes exceeds the limit of "
+              "%(limit)s bytes.", length=length, limit=limit))
+    return _BoundedInput(environ['wsgi.input'], length), length
+
+
+def _read_exactly(fp, length):
+    chunks = []
+    remaining = length
+    while remaining > 0:
+        chunk = fp.read(remaining)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b''.join(chunks)
+
+
 if multipart:
     def parse_header(header):
         return multipart.parse_options_header(header)
 
-    def parse_form_data(environ):
+    def parse_form_data(environ,
+                        max_urlencoded_size=DEFAULT_MAX_URLENCODED_BODY_SIZE,
+                        max_multipart_size=DEFAULT_MAX_MULTIPART_BODY_SIZE):
         if environ['REQUEST_METHOD'] != 'POST':
             query_string = environ.get('QUERY_STRING', '')
             for name, value in parse_arg_list(query_string):
@@ -520,8 +591,8 @@ if multipart:
             ctype, options = parse_header(ctype)
 
         if ctype == 'application/x-www-form-urlencoded':
-            length = int(environ.get('CONTENT_LENGTH', -1))
-            data = environ['wsgi.input'].read(length)
+            fp, length = _form_body_input(environ, max_urlencoded_size)
+            data = _read_exactly(fp, length)
             pairs = urllib.parse.parse_qsl(
                 str(data, 'utf-8'), keep_blank_values=True,
                 strict_parsing=False, encoding='utf-8', errors='strict')
@@ -532,9 +603,11 @@ if multipart:
             return
 
         if ctype == 'multipart/form-data':
+            fp, _length = _form_body_input(environ, max_multipart_size)
+            form_environ = dict(environ, **{'wsgi.input': fp})
             try:
                 forms, files = multipart.parse_form_data(
-                    environ, charset='utf-8', strict=False)
+                    form_environ, charset='utf-8', strict=False)
             except multipart.MultipartError:
                 raise HTTPBadRequest(_("Invalid request arguments."))
             try:
@@ -573,7 +646,9 @@ else:
                 # possibly an upload of a .mht file? See #9880.
                 self.read_single()
 
-    def parse_form_data(environ):
+    def parse_form_data(environ,
+                        max_urlencoded_size=DEFAULT_MAX_URLENCODED_BODY_SIZE,
+                        max_multipart_size=DEFAULT_MAX_MULTIPART_BODY_SIZE):
         environ = environ.copy()
         fp = environ['wsgi.input']
 
@@ -585,6 +660,11 @@ else:
         if ctype not in ('application/x-www-form-urlencoded',
                          'multipart/form-data'):
             fp = io.BytesIO()
+        elif environ['REQUEST_METHOD'] == 'POST':
+            limit = (max_urlencoded_size
+                     if ctype == 'application/x-www-form-urlencoded'
+                     else max_multipart_size)
+            fp, _length = _form_body_input(environ, limit)
 
         # Python 2.6 introduced a backwards incompatible change for
         # FieldStorage where QUERY_STRING is no longer ignored for POST
@@ -656,6 +736,11 @@ class Request(object):
                          'etag', 'pragma', 'cache-control', 'expires'}
     # RFC7230 3.2 Header Fields
     _valid_header_re = re.compile(r"[-0-9A-Za-z!#$%&'*+.^_`|~]+\Z")
+
+    # Upper bounds for form submission bodies; the request dispatcher
+    # overrides them from the [trac] configuration section.
+    max_urlencoded_body_size = DEFAULT_MAX_URLENCODED_BODY_SIZE
+    max_multipart_body_size = DEFAULT_MAX_MULTIPART_BODY_SIZE
 
     def __init__(self, environ, start_response):
         """Create the request wrapper.
@@ -1052,7 +1137,10 @@ class Request(object):
         `(name, value)` tuples.
         """
         try:
-            return list(parse_form_data(self.environ))
+            return list(parse_form_data(
+                self.environ,
+                max_urlencoded_size=self.max_urlencoded_body_size,
+                max_multipart_size=self.max_multipart_body_size))
         except UnicodeDecodeError as e:
             raise HTTPBadRequest(_("Invalid encoding in form data: %(msg)s",
                                    msg=exception_to_unicode(e)))

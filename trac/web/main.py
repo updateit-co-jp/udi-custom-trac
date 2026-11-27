@@ -33,8 +33,8 @@ from jinja2 import FileSystemLoader
 
 from trac import __version__ as TRAC_VERSION
 from trac.config import BoolOption, ChoiceOption, ConfigSection, \
-                        ConfigurationError, ExtensionOption, Option, \
-                        OrderedExtensionsOption
+                        ConfigurationError, ExtensionOption, IntOption, \
+                        Option, OrderedExtensionsOption
 from trac.core import *
 from trac.env import open_environment
 from trac.loader import get_plugin_info, match_plugins_to_frames
@@ -49,7 +49,9 @@ from trac.util.text import (exception_to_unicode, jinja2env, shorten_line,
                             to_unicode, to_utf8, unicode_quote)
 from trac.util.translation import _, get_negotiated_locale, has_babel, \
                                   safefmt, tag_
-from trac.web.api import HTTPBadRequest, HTTPException, HTTPForbidden, \
+from trac.web.api import DEFAULT_MAX_MULTIPART_BODY_SIZE, \
+                         DEFAULT_MAX_URLENCODED_BODY_SIZE, HTTPBadRequest, \
+                         HTTPException, HTTPForbidden, \
                          HTTPInternalServerError, HTTPNotFound, IAuthenticator, \
                          IRequestFilter, IRequestHandler, Request, \
                          RequestDone, TracNotImplementedError, \
@@ -164,6 +166,25 @@ class RequestDispatcher(Component):
         """The header to use if `use_xsendfile` is enabled. If Nginx is used,
         set `X-Accel-Redirect`. (''since 1.0.6'')""")
 
+    max_urlencoded_body_size = IntOption('trac', 'max_urlencoded_body_size',
+                                         DEFAULT_MAX_URLENCODED_BODY_SIZE,
+        """Maximum size in bytes of a URL-encoded form submission body
+        (POST with `application/x-www-form-urlencoded`). A request whose
+        `Content-Length` exceeds this value is rejected with
+        `413 Request Entity Too Large` before the body is read. Form
+        submissions without a `Content-Length` are rejected with
+        `411 Length Required`. Must be a positive integer.
+        (''since 1.8.0'')""")
+
+    max_multipart_body_size = IntOption('trac', 'max_multipart_body_size',
+                                        DEFAULT_MAX_MULTIPART_BODY_SIZE,
+        """Maximum size in bytes of a multipart form submission body
+        (POST with `multipart/form-data`), including uploaded attachments.
+        The limit for a single attachment is still set by
+        `[attachment] max_size`. Requests above this value are rejected
+        with `413 Request Entity Too Large` before the body is read.
+        Must be a positive integer. (''since 1.8.0'')""")
+
     configurable_headers = ConfigSection('http-headers', """
         Headers to be added to the HTTP request. (''since 1.2.3'')
 
@@ -189,6 +210,21 @@ class RequestDispatcher(Component):
             if authname:
                 return authname
         return 'anonymous'
+
+    def form_body_size_limits(self):
+        """Return the `(urlencoded, multipart)` form body size limits in
+        bytes. A non-positive value is a configuration error.
+        """
+        limits = []
+        for option in ('max_urlencoded_body_size',
+                       'max_multipart_body_size'):
+            value = getattr(self, option)
+            if value <= 0:
+                raise ConfigurationError(
+                    _("The [trac] %(option)s option must be a positive "
+                      "integer, not %(value)s.", option=option, value=value))
+            limits.append(value)
+        return tuple(limits)
 
     def dispatch(self, req):
         """Find a registered handler that matches the request and let
@@ -606,6 +642,8 @@ def dispatch_request(environ, start_response):
             raise HTTPInternalServerError(env_error)
         dispatcher = RequestDispatcher(env)
         dispatcher.set_default_callbacks(req)
+        req.max_urlencoded_body_size, req.max_multipart_body_size = \
+            dispatcher.form_body_size_limits()
         try:
             dispatcher.dispatch(req)
         except RequestDone as req_done:
