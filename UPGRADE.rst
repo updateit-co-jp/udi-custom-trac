@@ -235,8 +235,12 @@ environment uses, for example ``babel``, ``rest``, ``pygments``,
 ``textile``, ``mysql`` or ``psycopg2-binary``, as described in the
 `installation
 guide <https://trac.edgewall.org/wiki/TracInstall#Usinguv>`__. Reinstall
-any third-party plugins in the new virtual environment as well. Keep the
-old virtual environment until the new one has been verified.
+any third-party plugins in the new virtual environment as well. If the
+htpasswd file used by the Basic authentication contains SHA-256,
+SHA-512, bcrypt or DES crypt passwords, also install ``passlib`` in the
+new virtual environment, because the ``crypt`` module is not available
+in Python 3.13 or later. Keep the old virtual environment until the new
+one has been verified.
 
 .. _a3.runtheupgradewiththenewvirtualenvironment:
 

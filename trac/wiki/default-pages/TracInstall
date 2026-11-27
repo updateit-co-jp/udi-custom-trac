@@ -17,8 +17,8 @@ These are generic instructions for installing and setting up Trac. While you may
 To install Trac, the following software packages must be installed:
 
  * [https://www.python.org/ Python], version >= 3.13 (3.14 or later recommended)
- * [https://pypi.org/project/setuptools setuptools], version > 5.6
- * [https://pypi.org/project/Jinja2 Jinja2], version >= 2.9.3
+ * [https://pypi.org/project/setuptools setuptools], version >= 67.0, < 81
+ * [https://pypi.org/project/Jinja2 Jinja2], version >= 3.0
 
 You also need a database system and the corresponding Python bindings. The database can be either SQLite, PostgreSQL or MySQL.
 
@@ -41,7 +41,7 @@ See [trac:DatabaseBackend#Postgresql DatabaseBackend] for details.
 Trac works well with MySQL, provided you use the following:
 
  * [https://mysql.com/ MySQL], version 5.0 or later
- * [https://pypi.org/project/PyMySQL PyMySQL]
+ * [https://pypi.org/project/PyMySQL PyMySQL], version >= 1.0.2
 
 Given the caveats and known issues surrounding MySQL, read carefully the [trac:MySqlDb] page before creating the database.
 
@@ -85,12 +85,12 @@ Alternatively you can configure Trac to run in any of the following environments
 
 ==== Other Python Packages
 
- * [http://babel.pocoo.org Babel], version >= 2.2, needed for localization support
+ * [http://babel.pocoo.org Babel], version >= 2.7.0, needed for localization support
  * [http://pytz.sourceforge.net pytz] to get a complete list of time zones, otherwise Trac will fall back on a shorter list from an internal time zone implementation. Installing Babel will install pytz.
- * [http://docutils.sourceforge.net docutils], version >= 0.14, for WikiRestructuredText.
- * [http://pygments.org Pygments], version >= 1.0, for [TracSyntaxColoring syntax highlighting].
+ * [http://docutils.sourceforge.net docutils], version >= 0.16, for WikiRestructuredText.
+ * [http://pygments.org Pygments], version >= 2.2, for [TracSyntaxColoring syntax highlighting].
  * [https://pypi.org/project/textile Textile], version >= 2.3, for rendering the [https://github.com/textile/python-textile Textile markup language].
- * [https://pypi.org/project/passlib passlib] on Windows to decode [TracStandalone#BasicAuthorization:Usingahtpasswdpasswordfile htpasswd formats] other than `SHA-1`.
+ * [https://pypi.org/project/passlib passlib] to decode [TracStandalone#BasicAuthorization:Usingahtpasswdpasswordfile htpasswd formats] other than `SHA-1` and Apache `MD5` (`$apr1$`). '''Required on all platforms with Python 3.13 or later''', because the `crypt` module was removed in Python 3.13. Without passlib, users whose passwords use the SHA-256, SHA-512, bcrypt or DES crypt formats are skipped with a warning and cannot log in.
  * [https://pypi.org/project/pyreadline pyreadline] on Windows for trac-admin [TracAdmin#InteractiveMode command completion].
 
 {{{#!div style="border: 1pt dotted; margin: 1em"

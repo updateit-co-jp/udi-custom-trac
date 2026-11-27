@@ -42,8 +42,9 @@ To install Trac, the following software packages must be installed:
 
 - `Python <https://www.python.org/>`__, version >= 3.13 (3.14 or later
   recommended)
-- `setuptools <https://pypi.org/project/setuptools>`__, version > 5.6
-- `Jinja2 <https://pypi.org/project/Jinja2>`__, version >= 2.9.3
+- `setuptools <https://pypi.org/project/setuptools>`__, version >= 67.0,
+  < 81
+- `Jinja2 <https://pypi.org/project/Jinja2>`__, version >= 3.0
 
 You also need a database system and the corresponding Python bindings.
 The database can be either SQLite, PostgreSQL or MySQL.
@@ -84,7 +85,7 @@ For the MySQL database
 Trac works well with MySQL, provided you use the following:
 
 - `MySQL <https://mysql.com/>`__, version 5.0 or later
-- `PyMySQL <https://pypi.org/project/PyMySQL>`__
+- `PyMySQL <https://pypi.org/project/PyMySQL>`__, version >= 1.0.2
 
 Given the caveats and known issues surrounding MySQL, read carefully the
 `MySqlDb <https://trac.edgewall.org/intertrac/MySqlDb>`__ page before
@@ -183,22 +184,25 @@ environments:
 Other Python Packages
 ^^^^^^^^^^^^^^^^^^^^^
 
-- `Babel <http://babel.pocoo.org>`__, version >= 2.2, needed for
+- `Babel <http://babel.pocoo.org>`__, version >= 2.7.0, needed for
   localization support
 - `pytz <http://pytz.sourceforge.net>`__ to get a complete list of time
   zones, otherwise Trac will fall back on a shorter list from an
   internal time zone implementation. Installing Babel will install pytz.
-- `docutils <http://docutils.sourceforge.net>`__, version >= 0.14, for
+- `docutils <http://docutils.sourceforge.net>`__, version >= 0.16, for
   `WikiRestructuredText <https://trac.edgewall.org/wiki/WikiRestructuredText>`__.
-- `Pygments <http://pygments.org>`__, version >= 1.0, for `syntax
+- `Pygments <http://pygments.org>`__, version >= 2.2, for `syntax
   highlighting <https://trac.edgewall.org/wiki/TracSyntaxColoring>`__.
 - `Textile <https://pypi.org/project/textile>`__, version >= 2.3, for
   rendering the `Textile markup
   language <https://github.com/textile/python-textile>`__.
-- `passlib <https://pypi.org/project/passlib>`__ on Windows to decode
-  `htpasswd
+- `passlib <https://pypi.org/project/passlib>`__ to decode `htpasswd
   formats <https://trac.edgewall.org/wiki/TracStandalone#BasicAuthorization:Usingahtpasswdpasswordfile>`__
-  other than ``SHA-1``.
+  other than ``SHA-1`` and Apache ``MD5`` (``$apr1$``). **Required on
+  all platforms with Python 3.13 or later**, because the ``crypt``
+  module was removed in Python 3.13. Without passlib, users whose
+  passwords use the SHA-256, SHA-512, bcrypt or DES crypt formats are
+  skipped with a warning and cannot log in.
 - `pyreadline <https://pypi.org/project/pyreadline>`__ on Windows for
   trac-admin `command
   completion <https://trac.edgewall.org/wiki/TracAdmin#InteractiveMode>`__.

@@ -733,16 +733,16 @@ functional = [
 
 [package.metadata]
 requires-dist = [
-    { name = "babel", marker = "extra == 'babel'", specifier = ">=2.2" },
-    { name = "docutils", marker = "extra == 'rest'", specifier = ">=0.14" },
-    { name = "jinja2", specifier = ">=2.9.3" },
-    { name = "multipart", marker = "python_full_version >= '3.13'" },
+    { name = "babel", marker = "extra == 'babel'", specifier = ">=2.7.0" },
+    { name = "docutils", marker = "extra == 'rest'", specifier = ">=0.16" },
+    { name = "jinja2", specifier = ">=3.0" },
+    { name = "multipart", marker = "python_full_version >= '3.13'", specifier = ">=1.1.0" },
     { name = "psycopg2", marker = "extra == 'postgresql'", specifier = ">=2.5" },
     { name = "psycopg2", marker = "extra == 'psycopg2'", specifier = ">=2.5" },
     { name = "psycopg2-binary", marker = "extra == 'psycopg2-binary'" },
-    { name = "pygments", marker = "extra == 'pygments'", specifier = ">=1.0" },
-    { name = "pymysql", marker = "extra == 'mysql'" },
-    { name = "setuptools", specifier = ">=30.3,<81" },
+    { name = "pygments", marker = "extra == 'pygments'", specifier = ">=2.2" },
+    { name = "pymysql", marker = "extra == 'mysql'", specifier = ">=1.0.2" },
+    { name = "setuptools", specifier = ">=67.0,<81" },
     { name = "textile", marker = "extra == 'textile'", specifier = ">=2.3" },
 ]
 provides-extras = ["babel", "mysql", "postgresql", "psycopg2", "psycopg2-binary", "pygments", "rest", "textile"]
