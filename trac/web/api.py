@@ -517,67 +517,30 @@ DEFAULT_MAX_MULTIPART_BODY_SIZE = 128 * 1024 * 1024
 _content_length_re = re.compile(r'[0-9]+\Z')
 
 
-class _BoundedInput(object):
-    """Read-only view of a WSGI input stream limited to `length` bytes.
-
-    The parser can never read past the declared body. `remaining` is the
-    number of declared bytes that have not been returned yet; a non-zero
-    value after parsing means the client closed the connection early.
-    """
-
-    def __init__(self, fp, length, owned=False):
-        self._fp = fp
-        self._owned = owned
-        self.remaining = length
-        # An I/O error while reading (e.g. the client disconnected) ends the
-        # stream early and is kept here, so the caller can clean up and fail
-        # the request without the parser seeing an exception mid-way.
-        self.error = None
-
-    def read(self, size=-1):
-        if self.remaining <= 0 or self.error is not None:
-            return b''
-        if size is None or size < 0 or size > self.remaining:
-            size = self.remaining
-        try:
-            data = self._fp.read(size)
-        except OSError as e:
-            self.error = e
-            return b''
-        self.remaining -= len(data)
-        return data
-
-    def drain(self):
-        """Consume the rest of the declared body, stopping at end of input."""
-        while self.remaining > 0:
-            if not self.read(min(_READ_CHUNK_SIZE, self.remaining)):
-                break
-
-    def close(self):
-        """Close the underlying stream if this object owns it. The server's
-        `wsgi.input` is never closed here."""
-        if self._owned:
-            self._fp.close()
-
-
 _READ_CHUNK_SIZE = 64 * 1024
-# Terminated bodies are kept in memory up to this size, then spooled to a
+# Form bodies are kept in memory up to this size, then spooled to a
 # temporary file.
 _SPOOL_MAX_SIZE = 64 * 1024
 
 
-def _form_body_input(environ, limit):
-    """Validate the body of a form submission before reading it.
+def _read_form_body(environ, limit):
+    """Read the whole body of a form submission into a spooled temporary
+    file, before any parsing starts.
 
-    Returns `(stream, length)`, where `stream` yields exactly `length`
-    bytes of the body. Raises an HTTP error without reading the body
-    when the declared length is larger than `limit`, malformed, or
-    missing on a stream that does not signal its own end.
+    Returns `(spool, length)` with the file rewound to the start; the caller
+    must close it. The body is validated first: a declared length larger
+    than `limit` is rejected with 413 without reading, a malformed length
+    with 400, and a missing length with 411 unless the server signals the
+    end of input (`wsgi.input_terminated`), in which case the body is read
+    up to `limit`.
 
-    When the server signals the end of input with `wsgi.input_terminated`
-    and no length is declared, the body is read into memory up to `limit`.
+    Read errors from the server's input stream are raised as they are, so
+    the caller can tell a client disconnect from a server-side failure. A
+    body shorter than its declared length is rejected with 400 here, before
+    the parser creates any temporary file of its own.
     """
     value = (environ.get('CONTENT_LENGTH') or '').strip()
+    stream = environ['wsgi.input']
     if value:
         if not _content_length_re.match(value):
             raise HTTPBadRequest(_("Invalid Content-Length header."))
@@ -588,74 +551,50 @@ def _form_body_input(environ, limit):
             raise HTTPRequestEntityTooLarge(
                 _("Form body exceeds the limit of %(limit)s bytes.",
                   limit=limit))
-        length = int(digits)
-        return _BoundedInput(environ['wsgi.input'], length), length
-
-    if not environ.get('wsgi.input_terminated'):
+        expected = int(digits)
+    elif environ.get('wsgi.input_terminated'):
+        expected = None
+    else:
         raise HTTPLengthRequired(_("Form submissions must include a "
                                    "Content-Length header."))
-    spool, length = _read_terminated_body(environ['wsgi.input'], limit)
-    spool.seek(0)
-    return _BoundedInput(spool, length, owned=True), length
 
-
-def _read_terminated_body(fp, limit):
-    """Copy a body that is delimited by end of input into a spooled
-    temporary file, failing if it exceeds `limit`. The file stays in
-    memory up to `_SPOOL_MAX_SIZE` and is written to disk beyond that.
-    """
     spool = tempfile.SpooledTemporaryFile(max_size=_SPOOL_MAX_SIZE)
     try:
-        total = 0
-        while True:
-            chunk = fp.read(min(_READ_CHUNK_SIZE, limit + 1 - total))
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > limit:
-                raise HTTPRequestEntityTooLarge(
-                    _("Form body exceeds the limit of %(limit)s bytes.",
-                      limit=limit))
-            spool.write(chunk)
+        length = _copy_body(stream, spool, expected, limit)
+        if expected is not None and length < expected:
+            raise HTTPBadRequest(_("Incomplete request body."))
+        spool.seek(0)
     except BaseException:
         spool.close()
         raise
-    return spool, total
+    return spool, length
 
 
-def _read_to_end(fp, limit):
-    """Read a stream until end of input or `limit` bytes, whichever comes
-    first. Read errors are recorded on a `_BoundedInput`, not raised.
+def _copy_body(stream, spool, expected, limit):
+    """Copy `expected` bytes (or everything up to end of input when
+    `expected` is None) from `stream` to `spool`. Stops early at end of
+    input. Returns the number of bytes copied.
     """
-    chunks = []
     total = 0
     while True:
-        chunk = fp.read(min(_READ_CHUNK_SIZE, limit + 1 - total))
+        if expected is None:
+            # Never ask for more than one byte past the limit, so an
+            # oversized body is detected without being read in full
+            want = min(_READ_CHUNK_SIZE, limit + 1 - total)
+        else:
+            want = min(_READ_CHUNK_SIZE, expected - total)
+        if want <= 0:
+            break
+        chunk = stream.read(want)
         if not chunk:
             break
-        chunks.append(chunk)
+        spool.write(chunk)
         total += len(chunk)
-    return b''.join(chunks)
-
-
-def _ensure_complete_body(fp, files=()):
-    """Consume the rest of a bounded form body and fail the request if the
-    body was not received in full. Files already spooled by the parser are
-    closed before the error is raised.
-    """
-    try:
-        fp.drain()
-        if fp.error is None and not fp.remaining:
-            return
-        if fp.error is not None:
-            raise HTTPBadRequest(
-                _("Exception caught while reading request: %(msg)s",
-                  msg=exception_to_unicode(fp.error)))
-        raise HTTPBadRequest(_("Incomplete request body."))
-    except BaseException:
-        for item in files:
-            item.close()
-        raise
+        if total > limit:
+            raise HTTPRequestEntityTooLarge(
+                _("Form body exceeds the limit of %(limit)s bytes.",
+                  limit=limit))
+    return total
 
 
 if multipart:
@@ -678,12 +617,11 @@ if multipart:
             ctype, options = parse_header(ctype)
 
         if ctype == 'application/x-www-form-urlencoded':
-            fp, length = _form_body_input(environ, max_urlencoded_size)
+            spool, _length = _read_form_body(environ, max_urlencoded_size)
             try:
-                data = _read_to_end(fp, length)
-                _ensure_complete_body(fp)
+                data = spool.read()
             finally:
-                fp.close()
+                spool.close()
             pairs = urllib.parse.parse_qsl(
                 str(data, 'utf-8'), keep_blank_values=True,
                 strict_parsing=False, encoding='utf-8', errors='strict')
@@ -694,20 +632,19 @@ if multipart:
             return
 
         if ctype == 'multipart/form-data':
-            fp, length = _form_body_input(environ, max_multipart_size)
+            # The body is complete in the spool before the parser runs, so
+            # the parser never sees a short or failing stream.
+            spool, length = _read_form_body(environ, max_multipart_size)
             try:
                 form_environ = dict(environ, **{
-                    'wsgi.input': fp, 'CONTENT_LENGTH': str(length)})
+                    'wsgi.input': spool, 'CONTENT_LENGTH': str(length)})
                 try:
                     forms, files = multipart.parse_form_data(
                         form_environ, charset='utf-8', strict=False)
                 except multipart.MultipartError:
                     raise HTTPBadRequest(_("Invalid request arguments."))
-                # Every spooled upload is closed on failure, including when
-                # the rest of the body cannot be read.
                 items = [item for name in files
                          for item in files.getall(name)]
-                _ensure_complete_body(fp, items)
                 try:
                     for name in forms:
                         _raise_if_null_bytes(name)
@@ -724,7 +661,7 @@ if multipart:
                         item.close()
                     raise
             finally:
-                fp.close()
+                spool.close()
             return
 
 else:
@@ -750,6 +687,7 @@ else:
                         max_multipart_size=DEFAULT_MAX_MULTIPART_BODY_SIZE):
         environ = environ.copy()
         fp = environ['wsgi.input']
+        spool = None
 
         # Avoid letting cgi.FieldStorage consume the input stream when the
         # request does not contain form data
@@ -763,8 +701,9 @@ else:
             limit = (max_urlencoded_size
                      if ctype == 'application/x-www-form-urlencoded'
                      else max_multipart_size)
-            fp, length = _form_body_input(environ, limit)
+            spool, length = _read_form_body(environ, limit)
             environ['CONTENT_LENGTH'] = str(length)
+            fp = spool
 
         # Python 2.6 introduced a backwards incompatible change for
         # FieldStorage where QUERY_STRING is no longer ignored for POST
@@ -774,8 +713,6 @@ else:
         try:
             fs = _FieldStorage(fp, environ=environ, keep_blank_values=True,
                                errors='strict')
-            if isinstance(fp, _BoundedInput):
-                _ensure_complete_body(fp)
             for value in fs.list or ():
                 name = value.name
                 _raise_if_null_bytes(name)
@@ -786,8 +723,8 @@ else:
                     _raise_if_null_bytes(value)
                 yield name, value
         finally:
-            if isinstance(fp, _BoundedInput):
-                fp.close()
+            if spool is not None:
+                spool.close()
 
 
 class RequestDone(TracBaseError):

@@ -30,7 +30,7 @@ dev = [
     "cryptography",
     "passlib",
     "bcrypt<4.1.0",
-    "multipart",
+    "multipart>=2.0.1",
     "aiosmtpd",
 ]
 functional = [

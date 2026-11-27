@@ -12,8 +12,10 @@
 # history and logs, available at https://trac.edgewall.org/log/.
 
 from datetime import datetime
+import errno
 import io
 import os.path
+import tempfile
 import unittest
 import unittest.mock
 
@@ -944,13 +946,18 @@ class _FailingInput(io.BytesIO):
     """`wsgi.input` stand-in that raises a connection error once `fail_at`
     bytes have been consumed."""
 
-    def __init__(self, data, fail_at):
+    def __init__(self, data, fail_at, error=None):
         super().__init__(data)
         self.fail_at = fail_at
+        self.error = error or ConnectionResetError('client disconnected')
 
     def read(self, size=-1):
-        if self.tell() >= self.fail_at:
-            raise ConnectionResetError('client disconnected')
+        position = self.tell()
+        if position >= self.fail_at:
+            raise self.error
+        # Deliver bytes only up to the drop point, as a socket would
+        if size is None or size < 0 or position + size > self.fail_at:
+            size = self.fail_at - position
         return super().read(size)
 
 
@@ -1134,33 +1141,68 @@ class FormBodyLimitTestCase(unittest.TestCase):
                                   content_length='0000003')
         self.assertEqual([('a', '1')], req.arg_list)
 
-    def test_connection_drop_closes_spooled_uploads(self):
-        # The client disconnects after the whole body was sent but before the
-        # declared length was reached. The spooled upload must be closed and
-        # the request must fail.
-        big = b'1' * 90000
-        body = self._multipart_body((b'attachment', b'ok.txt', big))
-        stream = _FailingInput(body, fail_at=len(body))
-        environ = _make_environ(method='POST', **{
-            'wsgi.input': stream,
-            'CONTENT_LENGTH': str(len(body) + 50),
-            'CONTENT_TYPE': self._multipart_ctype()})
-        req = Request(environ, None)
-        spooled = []
+    def test_short_body_is_rejected_before_parsing(self):
+        # The client sends fewer bytes than it declared. The body is checked
+        # before the parser runs, so the parser never sees a short stream.
+        body = self._multipart_body((b'attachment', b'ok.txt', b'1' * 90000))
+        req, _stream = self._post(body, self._multipart_ctype(),
+                                  content_length=str(len(body) + 50))
         parse = web_api.multipart.parse_form_data
+        calls = []
 
         def spy(*args, **kwargs):
-            forms, files = parse(*args, **kwargs)
-            spooled.extend(item.file for item in files.getall('attachment')
-                           if item.file is not None)
-            return forms, files
+            calls.append(1)
+            return parse(*args, **kwargs)
 
         with unittest.mock.patch.object(web_api.multipart,
                                         'parse_form_data', spy):
             with self.assertRaises(HTTPBadRequest):
                 req.arg_list
-        self.assertTrue(spooled)
-        for file_ in spooled:
+        self.assertEqual([], calls)
+
+    def test_server_side_read_error_is_not_a_client_error(self):
+        # EIO is a failure on the server, so it must not turn into a 400
+        body = b'a=1'
+        stream = _FailingInput(body, fail_at=1,
+                               error=OSError(errno.EIO, 'Input/output error'))
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream,
+            'CONTENT_LENGTH': str(len(body)),
+            'CONTENT_TYPE': 'application/x-www-form-urlencoded'})
+        req = Request(environ, None)
+        with self.assertRaises(OSError) as cm:
+            req.arg_list
+        self.assertNotIsInstance(cm.exception, HTTPBadRequest)
+        self.assertEqual(errno.EIO, cm.exception.errno)
+
+    def test_drop_mid_upload_closes_every_temp_file(self):
+        # The client disconnects while the parser is writing a large upload,
+        # so that upload is still open when the parser stops. Every temporary
+        # file created during the request must be closed.
+        big = b'1' * 90000
+        body = self._multipart_body((b'attachment', b'ok.txt', big))
+        # Past the parser's 64 KiB in-memory threshold, so the upload is
+        # already in a temporary file when the connection drops.
+        stream = _FailingInput(body, fail_at=80 * 1024)
+        environ = _make_environ(method='POST', **{
+            'wsgi.input': stream,
+            'CONTENT_LENGTH': str(len(body)),
+            'CONTENT_TYPE': self._multipart_ctype()})
+        req = Request(environ, None)
+        created = []
+        make_temp_file = tempfile.TemporaryFile
+
+        def spy_temp_file(*args, **kwargs):
+            file_ = make_temp_file(*args, **kwargs)
+            created.append(file_)
+            return file_
+
+        with unittest.mock.patch.object(tempfile, 'TemporaryFile',
+                                        spy_temp_file):
+            with self.assertRaises(HTTPBadRequest):
+                req.arg_list
+        self.assertTrue(created)
+        for file_ in created:
             self.assertTrue(file_.closed)
 
     def test_invalid_content_length_is_bad_request(self):
