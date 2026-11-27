@@ -229,121 +229,49 @@ The `trac-admin <https://trac.edgewall.org/wiki/TracAdmin>`__
 command-line tool, used to create and maintain `project
 environments <https://trac.edgewall.org/wiki/TracEnvironment>`__, as
 well as the `tracd <https://trac.edgewall.org/wiki/TracStandalone>`__
-standalone server are installed along with Trac. There are several
-methods for installing Trac.
-
-It is assumed throughout this guide that you have elevated permissions
-as the ``root`` user or by prefixing commands with ``sudo``. The umask
-``0002`` should be used for a typical installation on a Unix-based
-platform.
+standalone server are installed with this fork's wheel.
 
 .. _usingpip:
 
-Using ``pip``
-~~~~~~~~~~~~~
+Installing a local wheel
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-``pip`` is the modern Python package manager and is included in Python
-distributions. ``pip`` will automatically resolve the *required*
-dependencies (Jinja2 and setuptools) and download the latest packages
-from pypi.org.
+Download the wheel from
+`GitHub Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
+or build one from a checkout. To build locally, activate a virtual
+environment and run the following commands in the checkout:
 
-You can also install directly from a source package. You can obtain the
-source in a tar or zip from the
-`TracDownload <https://trac.edgewall.org/intertrac/TracDownload>`__
-page. After extracting the archive, change to the directory containing
-``setup.py`` and run:
+::
 
-.. container:: wiki-code
+   python -m pip install -r requirements-build.txt
+   make wheel
 
-   .. container:: code
+The build compiles translations and writes the wheel to ``dist/``. Copy
+the wheel to the deployment host, then install it in the target virtual
+environment. Use the filename of your wheel in the following command:
 
-      ::
+::
 
-         $ pip install .
+   python -m pip install /path/to/trac-1.8.0-py3-none-any.whl
 
-``pip`` supports numerous other install mechanisms. It can be passed the
-URL of an archive or other download location. Here are some examples:
+By default, pip resolves the runtime dependencies declared in the wheel.
+The optional dependencies can be installed from PyPI using pip:
 
--  Install the latest development version from a tar archive:
+::
 
-   .. container:: wiki-code
+   python -m pip install babel docutils pygments textile
 
-      .. container:: code
+To install extras together with the wheel, append them to its path:
 
-         ::
+::
 
-            $ pip install https://download.edgewall.org/trac/Trac-latest-dev.tar.gz
+   python -m pip install "/path/to/trac-1.8.0-py3-none-any.whl[babel,rest,pygments,textile]"
 
--  Install the unreleased 1.4-stable from subversion:
+``rest`` installs ``docutils``. Add ``mysql`` or ``psycopg2-binary``
+if you use MySQL or PostgreSQL, respectively.
 
-   .. container:: wiki-code
-
-      .. container:: code
-
-         ::
-
-            $ pip install svn+https://svn.edgewall.org/repos/trac/branches/1.4-stable
-
--  Install the latest development preview (*not recommended for
-   production installs*):
-
-   .. container:: wiki-code
-
-      .. container:: code
-
-         ::
-
-            $ pip install --find-links=https://trac.edgewall.org/wiki/TracDownload Trac
-
-The optional dependencies can be installed from PyPI using ``pip``:
-
-.. container:: wiki-code
-
-   .. container:: code
-
-      ::
-
-         $ pip install babel docutils pygments textile
-
-The optional dependencies can alternatively be specified using the
-``extras`` keys in the setup file:
-
-.. container:: wiki-code
-
-   .. container:: code
-
-      ::
-
-         $ pip install Trac[babel,rest,pygments,textile]
-
-``rest`` is the extra that installs the ``docutils`` dependency.
-
-Include ``mysql`` or ``psycopg2-binary`` in the list if using the MySQL
-or PostgreSQL database.
-
-Additionally, you can install several Trac plugins from PyPI (listed
-`here <https://pypi.org/search/?c=Framework+%3A%3A+Trac>`__) using pip.
-See `TracPlugins <https://trac.edgewall.org/wiki/TracPlugins>`__ for
-more information.
-
-.. _usinginstaller:
-
-Using installer
-~~~~~~~~~~~~~~~
-
-On Windows, Trac can be installed using the exe installers available on
-the `TracDownload <https://trac.edgewall.org/intertrac/TracDownload>`__
-page. Installers are available for the 32-bit and 64-bit versions of
-Python. Make sure to use the installer that matches the architecture of
-your Python installation.
-
-.. _usingpackagemanager:
-
-Using package manager
-~~~~~~~~~~~~~~~~~~~~~
-
-Trac may be available in your platform's package repository. However,
-your package manager may not provide the latest release of Trac.
+Third-party plugins can also be installed from PyPI. See
+`TracPlugins <https://trac.edgewall.org/wiki/TracPlugins>`__ for details.
 
 .. _creatingaprojectenvironment:
 

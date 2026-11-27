@@ -553,8 +553,7 @@ try:
 
 
     def get_command_overriders():
-        # 'bdist_wininst' runs a 'build', so make the latter
-        # run a 'compile_catalog' before 'build_py'
+        # Compile translations before build_py collects package data.
         class build(_build):
             sub_commands = [('compile_catalog', None)] + _build.sub_commands
 

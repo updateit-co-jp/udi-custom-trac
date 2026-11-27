@@ -1,0 +1,5 @@
+# Packages needed to build a wheel from this checkout.
+setuptools>=75.3.1,<81
+wheel
+Jinja2
+Babel

@@ -37,7 +37,7 @@ define HELP
   help-server         tasks and configuration for starting tracd
   help-l10n           tasks and configuration for L10N maintenance
   help-doc            tasks and configuration for preparing Trac documentation
-  help-release        tasks and configuration for preparing a Trac release
+  help-build          tasks for building a wheel and maintaining bundled help
   help-misc           several other tasks
 
   help-all            all the tasks at a glance...
@@ -668,68 +668,26 @@ clean-doc:
 
 # ----------------------------------------------------------------------------
 #
-# Release related tasks
+# Build and maintenance tasks
 #
 # ----------------------------------------------------------------------------
 
-define HELP_release
+define HELP_build
 
- ---------------- Release tasks
+ ---------------- Build and maintenance tasks
 
-  release             generate the .tar.gz and .whl packages
-  release-clean       remove the packages
-
-  update-help         fetches latest help/guide from Edgewall
+  wheel               compile translations and build a wheel in dist/
+  update-help         update bundled help and regenerate the install guides
   update-copyright    update copyright year in file headers
-  checksum            MD5 and SHA1 checksums of packages of given version
-  upload              scp the packages of given version to user@lynx:~/dist
 
-  [version=...]       version number, mandatory for checksum and upload
   [prefix=...]        wiki page prefix for update-help
 endef
-export HELP_release
+export HELP_build
 
-.PHONY: release wheel dist
-.PHONY: release-clean checksum update-copyright update-help upload
+.PHONY: wheel update-copyright update-help
 
-release: wheel sdist
-
-release-clean:
-ifeq "$(version)" ""
-	$(error "specify version= on the make command-line")
-else
-	@rm $(sdist+wheel)
-endif
-
-user ?= $(or $(USER),$(LOGNAME),$(USERNAME))
-lynx = $(user)@lynx.edgewall.com:/home/$(user)/dist
-SCP ?= scp
-
-wheel:
+wheel: compile
 	@$(PYTHON) setup.py bdist_wheel
-sdist:
-	@$(PYTHON) setup.py sdist
-
-sdist+wheel = $(sdist_gztar) $(bdist_wheel)
-
-sdist_gztar = dist/trac-$(version).tar.gz
-bdist_wheel = dist/trac-$(version)-py3-none-any.whl
-
-
-packages = $(wildcard $(sdist+wheel))
-
-checksum:
-ifeq "$(version)" ""
-	$(error "specify version= on the make command-line")
-else
-	@echo "Packages for Trac-$(version):"
-	@echo
-	@$(if $(packages), \
-	    $(PYTHON) contrib/checksum.py md5:sha256 $(packages) \
-	, \
-	    echo "No packages found: $(sdist+wheel)" \
-	)
-endif
 
 copyright_re := "s/^($$PREFIX)(Copyright \(C\) 20[0-9][0-9])(-20[0-9][0-9])?$\
     ( Edgewall Software\r?)$$/\1\2-$(year)\4/g"
@@ -761,17 +719,16 @@ else
 	    trac/admin/console.py trac/templates/about.html
 endif
 
+# These pages describe this fork's installation and upgrade process.
+local_help_pages = TracInstall TracUpgrade
+upstream_help_pages = $(filter-out $(local_help_pages), \
+    $(notdir $(wildcard trac/wiki/default-pages/*)))
+
 update-help:
-	@$(PYTHON) contrib/checkwiki.py -d --prefix=$(prefix)
+	@$(PYTHON) contrib/checkwiki.py -d --prefix=$(prefix) $(upstream_help_pages)
+	@$(PYTHON) contrib/checkwiki.py $(local_help_pages)
 	@$(PYTHON) contrib/wiki2rst.py TracUpgrade > UPGRADE.rst
 	@$(PYTHON) contrib/wiki2rst.py TracInstall > INSTALL.rst
-
-upload: checksum
-ifeq "$(user)" ""
-	$(error "define user in Makefile.cfg for uploading to lynx")
-else
-	$(if $(packages),$(SCP) $(packages) $(lynx))
-endif # user
 
 
 

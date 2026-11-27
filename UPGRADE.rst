@@ -59,44 +59,17 @@ beginning. You may also wish to create a full backup of your server.
 3. Update Trac and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The packages are available through several channels, as described in
-`TracDownload <https://trac.edgewall.org/intertrac/TracDownload>`__. If
-your Trac instance was installed through an operating system package
-manager, proceed with the standard steps that are appropriate for your
-operating system package manager. If it was installed through a Windows
-installer, uninstall the old Trac package before installing new Trac
-package.
+Obtain the wheel for the target version from
+`GitHub Releases <https://github.com/updateit-co-jp/udi-custom-trac/releases>`__
+or from a local build. In the virtual environment that runs Trac,
+install the local wheel using its actual filename:
 
-If you are managing your Trac installation using command line tools,
-``pip`` is the preferred tool to upgrade a Trac instance because it will
-uninstall the old version. The following command will upgrade your Trac
-installation using the package published to
-`PyPI <https://pypi.python.org/pypi/Trac>`__.
+::
 
-.. container:: wiki-code
+   python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl
 
-   .. container:: code
-
-      ::
-
-         $ pip install --upgrade Trac
-
-The upgrade command will give you the latest release of Trac. If instead
-you wish to upgrade to a different version, such as a minor release of
-Trac when there is a newer major release available, then specify the
-Trac version in the ``pip`` command.
-
-.. container:: wiki-code
-
-   .. container:: code
-
-      ::
-
-         $ pip install --upgrade Trac==1.4.1
-
-You should also upgrade dependencies so they are compliant with the
-`required
-versions <https://trac.edgewall.org/wiki/TracInstall#Dependencies>`__.
+Ensure that the installed dependencies satisfy the requirements of the
+target version before proceeding with the environment upgrade.
 
 .. _upgradethetracenvironment:
 

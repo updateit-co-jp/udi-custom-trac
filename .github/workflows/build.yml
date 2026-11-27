@@ -5,7 +5,7 @@ name: build
 on:
   push:
     branches: ['**']
-    tags: ['trac-*']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
   pull_request:
     branches: ['**']
 
@@ -427,19 +427,17 @@ jobs:
 
 
   release:
-    runs-on: ${{ matrix.os }}
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' && !github.event.deleted && github.repository == 'updateit-co-jp/udi-custom-trac' }}
+    runs-on: ubuntu-24.04
 
     timeout-minutes: 10
 
-    strategy:
-      matrix:
-        os: [ubuntu-26.04]
-        python-version: ['3.15']
-
     needs: [posix-test-minimum, posix-test, windows-test-minimum, windows-test]
 
+    permissions:
+      contents: write
+
     env:
-      PIP_NO_PYTHON_VERSION_WARNING: '1'
       PIP_DISABLE_PIP_VERSION_CHECK: '1'
 
     steps:
@@ -447,30 +445,98 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v6
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: requirements-build.txt
 
-    - name: Set up pip cache
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: ${{ matrix.os }}--pip-py${{ matrix.python-version }}--${{ hashFiles('.github/requirements.txt') }}
+    - name: Build and check the release wheel
+      shell: bash
+      run: |
+        if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+          echo "::error::Expected a release tag in vX.Y.Z format"
+          exit 1
+        fi
 
-    - name: Build release packages
-      run: . .github/release.sh
+        version=${GITHUB_REF_NAME#v}
+        python - "$version" <<'PY'
+        from configparser import ConfigParser
+        from pathlib import Path
+        import sys
 
-    - name: Upload release packages
-      uses: actions/upload-artifact@v7
-      with:
-        name: release
-        path: dist/trac-*
-        if-no-files-found: ignore
+        path = Path("setup.cfg")
+        setup = ConfigParser(interpolation=None)
+        setup.read(path, encoding="utf-8")
+        setup["metadata"]["version"] = sys.argv[1]
+        setup.remove_option("egg_info", "tag_build")
+        with path.open("w", encoding="utf-8") as f:
+            setup.write(f)
+        PY
+        python -m pip install -r requirements-build.txt
+        make wheel
+        wheel="$PWD/dist/trac-$version-py3-none-any.whl"
+        python -m venv "$RUNNER_TEMP/trac-wheel-check"
+        bin="$RUNNER_TEMP/trac-wheel-check/bin"
+        cd "$RUNNER_TEMP"
+        "$bin/python" -m pip install "$wheel"
+        "$bin/python" - "$version" <<'PY'
+        from importlib.metadata import distribution
+        import sys
 
-    - name: Upload release packages to edgewall.org
-      if: ${{ github.event_name == 'push' && github.repository == 'edgewall/trac' }}
+        trac = distribution("Trac")
+        if trac.version != sys.argv[1]:
+            raise SystemExit("Wheel metadata version does not match the release tag")
+        expected = (
+            "trac/locale/ja/LC_MESSAGES/messages.mo",
+            "trac/locale/ja/LC_MESSAGES/tracini.mo",
+            "trac/htdocs/js/messages/ja.js",
+        )
+        for path in expected:
+            if not trac.locate_file(path).is_file():
+                raise SystemExit("Wheel is missing " + path)
+        PY
+        "$bin/trac-admin" "$RUNNER_TEMP/trac-smoke-env" initenv "Wheel smoke test" sqlite:db/trac.db
+        "$bin/tracd" --version
+
+    - name: Attach the wheel to a draft GitHub release
+      shell: bash
       env:
-        EDGEWALL_KEY_BASE64: ${{ secrets.EDGEWALL_KEY_BASE64 }}
-        EDGEWALL_HOST_KEY: ${{ secrets.EDGEWALL_HOST_KEY }}
-      run: . .github/release-upload.sh
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        tag="$GITHUB_REF_NAME"
+        version=${tag#v}
+        wheel="dist/trac-$version-py3-none-any.whl"
+        release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+          jq -c --arg tag "$tag" '.[] | select(.tag_name == $tag)')
+        if [[ -n "$release" && $(jq -r '.draft' <<< "$release") == false ]]; then
+          echo "Release $tag is already published"
+          exit 0
+        fi
+
+        refs=$(git ls-remote origin refs/heads/main "$GITHUB_REF" "$GITHUB_REF^{}")
+        main=$(awk '$2 == "refs/heads/main" {print $1}' <<< "$refs")
+        tagged=$(awk -v ref="$GITHUB_REF" '
+          $2 == ref {tag = $1}
+          $2 == ref "^{}" {commit = $1}
+          END {print (commit ? commit : tag)}
+        ' <<< "$refs")
+        built=$(git rev-parse HEAD)
+        if [[ "$built" != "$main" || "$built" != "$tagged" ]]; then
+          echo "::error::The release tag must still point to the current main commit"
+          exit 1
+        fi
+
+        if [[ -z "$release" ]]; then
+          gh release create "$tag" "$wheel" --draft --verify-tag --title "$tag" --generate-notes
+        else
+          state=$(jq -r --arg asset "${wheel##*/}" '
+            .assets[] | select(.name == $asset) | .state
+          ' <<< "$release")
+          case "$state" in
+            uploaded) echo "Draft $tag already contains ${wheel##*/}" ;;
+            "") gh release upload "$tag" "$wheel" ;;
+            *) gh release upload "$tag" "$wheel" --clobber ;;
+          esac
+        fi

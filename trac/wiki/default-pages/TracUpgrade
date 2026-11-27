@@ -24,21 +24,13 @@ Although a database backup will be implicitly created by default when upgrading 
 
 === 3. Update Trac and dependencies #UpdatetheTracCode
 
-The packages are available through several channels, as described in [trac:TracDownload]. If your Trac instance was installed through an operating system package manager, proceed with the standard steps that are appropriate for your operating system package manager. If it was installed through a Windows installer, uninstall the old Trac package before installing new Trac package.
-
-If you are managing your Trac installation using command line tools, `pip` is the preferred tool to upgrade a Trac instance because it will uninstall the old version. The following command will upgrade your Trac installation using the package published to [https://pypi.python.org/pypi/Trac PyPI].
+Obtain the wheel for the target version from [https://github.com/updateit-co-jp/udi-custom-trac/releases GitHub Releases] or from a local build. In the virtual environment that runs Trac, install the local wheel using its actual filename:
 
 {{{#!sh
-$ pip install --upgrade Trac
+python -m pip install --upgrade /path/to/trac-1.8.0-py3-none-any.whl
 }}}
 
-The upgrade command will give you the latest release of Trac. If instead you wish to upgrade to a different version, such as a minor release of Trac when there is a newer major release available, then specify the Trac version in the `pip` command.
-
-{{{#!sh
-$ pip install --upgrade Trac==1.4.1
-}}}
-
-You should also upgrade dependencies so they are compliant with the [TracInstall#Dependencies required versions].
+Ensure that the installed dependencies satisfy the requirements of the target version before proceeding with the environment upgrade.
 
 === 4. Upgrade the Trac Environment #UpgradetheTracEnvironment
 

@@ -22,7 +22,8 @@
 - 仮想環境を有効にし、`python -m pip install -e .` で編集可能インストールを行う。
 - `trac-admin /path/to/test-env initenv` で開発用環境を作成し、`make server env=/path/to/test-env port=8000` でローカルサーバーを起動する。
 - 単体テストは `make unit-test`、ブラウザテストは `make functional-test`、両方は `make test`。個別実行の例は `make test=trac/ticket/tests/model.py`。
-- リリース時は `.github/release.sh` に従い、`requirements-release.txt` の依存関係と `setuptools-git` をインストールする。`make compile sdist wheel` で翻訳をコンパイルし、ソースアーカイブと wheel を作成する。
+- ローカルでビルドするには仮想環境で `python -m pip install -r requirements-build.txt` を実行し、`make wheel` で翻訳込みの wheel を `dist/` に生成する。
+- リリース時はリモートの `main` の先端に `vX.Y.Z` タグを付けて push する。既存 CI の全テストが成功すると、タグのバージョンでビルドした wheel が GitHub Releases のドラフトに添付される。公開は手動で行う。
 
 ## コーディングスタイルと命名規則
 
