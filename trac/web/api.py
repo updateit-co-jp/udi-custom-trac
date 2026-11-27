@@ -535,9 +535,11 @@ def _release_unfinished_parts(tb):
     """
     frame_tb = tb
     while frame_tb is not None:
-        unfinished = frame_tb.tb_frame.f_locals.get('part')
-        if isinstance(unfinished, multipart.MultipartPart):
-            unfinished.close()
+        frame = frame_tb.tb_frame
+        if frame.f_globals is vars(multipart):
+            unfinished = frame.f_locals.get('part')
+            if isinstance(unfinished, multipart.MultipartPart):
+                unfinished.close()
         frame_tb = frame_tb.tb_next
     traceback.clear_frames(tb)
 
