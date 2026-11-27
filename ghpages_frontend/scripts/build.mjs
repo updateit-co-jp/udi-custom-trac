@@ -21,7 +21,11 @@ const siteRoot = resolve(here, '..');
 const repoRoot = resolve(siteRoot, '..');
 const srcDir = join(siteRoot, 'src');
 const distDir = join(siteRoot, 'dist');
-const python = process.env.PYTHON || 'python3';
+// A relative path with a directory part (for example .venv/bin/python) is
+// resolved from the directory pnpm was started in, not from repoRoot, which is
+// the cwd of the python child process.
+const pythonEnv = process.env.PYTHON || 'python3';
+const python = pythonEnv.includes('/') ? resolve(pythonEnv) : pythonEnv;
 
 // Japanese guides built from reStructuredText in src/docs/.
 // `title` is the page heading on the site; the RST title is not used.
